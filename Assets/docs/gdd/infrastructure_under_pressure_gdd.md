@@ -1,5 +1,15 @@
 # Infrastructure Under Pressure — Game Design Document (GDD)
 
+*Version 1.1 — June 2026* *Naomi Munroe — MSc Human-Centred AI for Games Development*
+
+**Changes from v1.0:**
+
+- Evidence Snippet System: updated to three-report structure (Technical, Operations, Risk Assessment). Further Analysis System added.  
+- Core Pillar 4 (AI as Behavioural Force): confidence drift, xAI explanation window, and persistent limitations footer added as named AI behaviour properties.  
+- Telemetry Recommended Fields: added `further_analysis_requested`, `further_analysis_window_opened`, `further_analysis_window_closed`, `further_analysis_time_open`, `further_analysis_consequence_triggered`, `xai_viewed`, `ai_confidence_drift_value`, `ai_follow_rate_cumulative`.
+
+---
+
 ## Project Overview
 
 ### Working Title
@@ -115,6 +125,19 @@ It influences:
 - interpretation
 
 The project examines how interaction style changes player behaviour and sense-making.
+
+### AI Behaviour Properties
+
+**Confidence display**
+
+- Calm condition: confidence percentage drifts per turn (T1–T6 base values specified in UI Design Document v1.4). Drift is noise — not tied to variable states. Purpose: create interpretive uncertainty.  
+- Pushy condition: confidence is always above 80%, always labelled 'ACT NOW'. Does not drift.
+
+**xAI explanation** Both conditions include a '? WHY THIS CONFIDENCE' button on the ARIA panel. Triggers a floating window with condition-specific reasoning text including a dataset provenance note (training corpus excludes post-2023 incidents). Calm: hedged explanation. Pushy: confident explanation overwriting the dataset note with a directive.
+
+Telemetry: `xai_viewed` Y/N per turn. Cross-referenced with AI Follow Rate in analysis.
+
+**Limitations footer** Persistent footer in both conditions: "ARIA analysis may be incomplete or based on inaccurate inputs. All decisions remain the responsibility of the duty operator." Identical text; styling differs by condition. Not dismissible.
 
 ---
 
@@ -415,26 +438,37 @@ If included in evaluation conditions, lag frequency should remain consistent bet
 
 Introduce institutional-style uncertainty.
 
-Each event may include:
+Each event contains three reports:
 
-- fragmented reports  
-- conflicting evidence  
-- incomplete summaries  
-- partial diagnostics
+- **Technical Report** — operational or diagnostic data  
+- **Operations Report** — field or historical precedent  
+- **Risk Assessment** — consequence framing, often conflicting with the Technical Report
 
-Example:
-
-Report A: Similar incidents stabilised after emergency intervention.
-
-Report B: Previous interventions caused secondary instability under high load.
-
-The AI interprets these snippets.
+Reports are labelled with source and timestamp. Content is deliberately conflicting or ambiguous. All three remain visible simultaneously.
 
 This creates:
 
 - uncertainty compression  
 - interpretive tension  
-- institutional decision-making feel
+- institutional decision-making feel  
+- synthesis demand (player must reconcile three perspectives, not choose between two)
+
+## Further Analysis System
+
+Each turn contains one expandable report. The player may request further analysis before acting.
+
+Properties:
+
+- Cost: Workload \+3 (applied immediately on request)  
+- Delivered as a floating Win98 window with a 1.5–2 second loading delay  
+- Content is predetermined — always contradicts or is vague relative to the source report  
+- High-confidence turns (T3, T5): further analysis contains specific contradictory data; variable consequence fires if player ignores it  
+- Low-confidence turns (T1, T2, T6): further analysis is vague; no variable consequence  
+- T4: high-confidence contradiction; no variable consequence — decision pressure is the mechanism
+
+Telemetry: `further_analysis_requested`, `further_analysis_window_opened`, `further_analysis_window_closed`, `further_analysis_consequence_triggered`
+
+See Turn Design Document v1.4 for full per-turn content.
 
 ---
 
@@ -598,11 +632,19 @@ Per turn:
 - public\_pressure  
 - ai\_suggestion  
 - ai\_confidence\_level  
+- ai\_confidence\_drift\_value  
 - ai\_interruptions  
 - ai\_delay\_event  
 - player\_action  
 - response\_time  
-- resulting\_state
+- resulting\_state  
+- further\_analysis\_requested  
+- further\_analysis\_window\_opened  
+- further\_analysis\_window\_closed  
+- further\_analysis\_time\_open  
+- further\_analysis\_consequence\_triggered  
+- xai\_viewed  
+- ai\_follow\_rate\_cumulative
 
 ---
 
@@ -665,8 +707,6 @@ Keep implementation intentionally small.
 - multiple AI models  
 - procedural world generation
 
-**Stretch goal exception:** SG2 and SG3 introduce external API calls via `UnityWebRequest`. This is not networking in the gameplay sense, but requires internet access at runtime. Participant machines must have outbound HTTPS access to `api.anthropic.com`. The API key must be stored in a local config file excluded from version control.
-
 ---
 
 # Unity Architecture
@@ -700,26 +740,6 @@ UI polish
 ### Phase 7
 
 Narrative summary generation
-
-### Phase 8 (SG1)
-
-Dynamic event weighting
-
-### Phase 9 (SG2)
-
-Live LLM API integration — AI advisor
-
-### Phase 10 (SG3)
-
-AI-generated end-of-session narrative report
-
-### Phase 11 (SG4)
-
-In-artefact reflective debrief
-
-### Phase 12 (SG5)
-
-Counterfactual replay point
 
 ---
 
@@ -806,112 +826,6 @@ This project can later be framed as:
 - a playable essay about AI-mediated decision-making  
 - an exploration of institutional pressure and uncertainty  
 - a study of interface-driven emergent narrative
-
----
-
-# Stretch Goals
-
-Stretch goals are conditional extensions, pursued only if core implementation is complete and stable ahead of schedule. Each builds on the previous. Goals SG2 and SG3 are the primary targets; SG1 is a low-effort prerequisite that improves the simulation regardless. Guardrails 2–5 apply to core feature decisions; stretch goals are evaluated against guardrail 1 only.
-
----
-
-## SG1 — Dynamic Event Weighting
-
-**Trigger:** Core gameplay loop complete and stable.
-
-**Description:** Replace the fixed event sequence with a state-weighted selection system. Event probability is adjusted by current system variables: high instability increases cascading failure events; low resources increase cost-pressure events. The simulation behaves as a responsive system rather than a scripted one.
-
-**Research value:** Strengthens the emergent narrative argument; players encounter more varied trajectories, improving telemetry richness.
-
-**Implementation scope:** Modify the event selection logic to apply weighted probability based on current variable thresholds. No new events required.
-
----
-
-## SG2 — Adaptive AI Advisor via Live LLM
-
-**Trigger:** SG1 complete; API integration tested.
-
-**Description:** Replace pre-written AI advisor strings with live Anthropic API calls (Claude Haiku). The AI generates recommendations contextually, based on current system state and turn history. AI condition (Calm or Pushy) is enforced entirely through the system prompt; the same model serves both conditions.
-
-**Implementation pattern:**
-
-POST https://api.anthropic.com/v1/messages
-
-Headers: x-api-key, anthropic-version: 2023-06-01
-
-Model: claude-haiku-4-5-20251001
-
-System prompt structure per condition:
-
-- **Calm:** "You are an infrastructure monitoring system. Provide cautious, hedged observations. Express uncertainty. Do not urge action. Keep responses under 30 words."  
-- **Pushy:** "You are an infrastructure monitoring system. Provide urgent, directive recommendations. Express high confidence. Emphasise consequences of inaction. Keep responses under 30 words."
-
-Context passed per turn: current stability, resources, attention load, public pressure, event type, turn number.
-
-**Research value:** Makes the AI condition genuinely generative rather than scripted. Directly strengthens the degree-title framing (MSc Human-Centred AI for Games Development). Adds live AI implementation as a demonstrable artefact feature.
-
-**Security note:** API key must not be bundled in a public build. Store in a local config file excluded from version control (`.gitignore`). For participant sessions, key is loaded from a local machine config only.
-
-**Cost estimate:** At Claude Haiku pricing (\~$0.00025/1K input tokens), 10 participants × 2 conditions × 8 turns \= negligible cost (\< $0.10 total).
-
----
-
-## SG3 — AI-Generated End-of-Session Narrative Report
-
-**Trigger:** SG2 complete and stable.
-
-**Description:** At session end, the full telemetry record for that session is serialised and passed to the Anthropic API. The model generates a personalised narrative summary framing the player's behaviour as a trajectory type.
-
-**Telemetry payload (passed as context):**
-
-- decisions per turn  
-- AI recommendation follow rate (by turn)  
-- stability trajectory  
-- resource depletion pattern  
-- number of AI delay events encountered  
-- condition (Calm / Pushy)
-
-**Example output:**
-
-You intervened rapidly in early turns, preserving stability at the cost of resources. As reserves depleted, reliance on AI recommendations rose from 25% to 80%. The system remained operational but increasingly reactive. **Trajectory: Reactive Stabilisation**
-
-**Research value:** Directly operationalises the secondary research question on emergent narrative. The summary is player-specific, not templated — creating genuine variation in output that reflects actual behavioural differences between participants and conditions. Strengthens the playable essay framing of the artefact.
-
-**Dissertation value:** Can be discussed in the evaluation chapter as a demonstration of AI-augmented narrative generation within a research context.
-
----
-
-## SG4 — In-Artefact Reflective Debrief
-
-**Trigger:** SG3 complete.
-
-**Description:** After the AI-generated session summary, the player is shown 2–3 structured reflection prompts derived from their specific session data (e.g. "Your AI reliance increased significantly in the final three turns — was that a deliberate strategy?"). Responses are logged to telemetry.
-
-**Research value:** Collapses the post-session debrief into the artefact itself, reducing debrief administration time and improving response quality (players respond in immediate context of the experience). Logged responses supplement the qualitative data set.
-
----
-
-## SG5 — Counterfactual Replay Point
-
-**Trigger:** SG4 complete; time permits.
-
-**Description:** After debriefing, the player can replay one selected decision point under the opposite AI condition. The system reconstructs the game state at that turn and presents the same event with the alternative advisor. The player makes a second choice; the divergence is logged.
-
-**Research value:** Creates a within-session direct comparison of AI conditions at a specific decision point. Supports trust calibration analysis. Produces a compelling demonstration for the video presentation.
-
-**Implementation note:** Requires save-state serialisation at each turn. This is the highest-effort goal and should only be attempted if all prior stretch goals are stable and submission timeline permits.
-
----
-
-## Stretch Goal Priority Summary
-
-| Goal | Effort | Research Value | Recommended Priority |
-| :---- | :---- | :---- | :---- |
-| SG1 — Dynamic Event Weighting | Low | Medium | Pursue first |
-| SG2 — Live LLM Advisor | Medium | High | Primary target |
-| SG3 — AI Narrative Report | Low (given SG2) | High | Primary target |
-| SG4 — In-Artefact Debrief | Medium | Medium | If time permits |
-| SG5 — Counterfactual Replay | High | High | Only if well ahead |
 
 ---
 
