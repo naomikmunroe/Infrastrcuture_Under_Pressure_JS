@@ -24,6 +24,9 @@ public class GameManager : MonoBehaviour
     public int CurrentTurn { get; private set; }
     public TurnState State { get; private set; }
 
+    // Set by T3 "Escalate Infrastructure Support" — halves workload gain from AI interrupts
+    public bool EscalateModifierActive { get; set; }
+
     public event Action OnVariablesChanged;
     public event Action OnGameOver;
 
@@ -40,17 +43,18 @@ public class GameManager : MonoBehaviour
 
     public void ResetSession()
     {
-        Stability   = 70;
-        Resources   = 70;
-        Workload    = 30;
-        Confidence  = 70;
-        CurrentTurn = 0;
-        State       = TurnState.AwaitingAction;
+        Stability              = 70;
+        Resources              = 70;
+        Workload               = 30;
+        Confidence             = 70;
+        CurrentTurn            = 0;
+        State                  = TurnState.AwaitingAction;
+        EscalateModifierActive = false;
         _pendingEffects.Clear();
     }
 
-    // Increments turn, processes any delayed effects due this turn, then checks end condition.
-    // Call once to begin each turn (before the player acts), then once more after turn 6's action.
+    // Call once per turn (after the player acts on the previous turn).
+    // Processes delayed effects due this turn, increments the counter, then checks end condition.
     public void AdvanceTurn()
     {
         CurrentTurn++;
@@ -68,7 +72,7 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    // Applies variable deltas and clamps to [0, 100]. Only way to modify variables.
+    // Only way to modify variables. Clamps results to [0, 100].
     public void ApplyEffect(Dictionary<string, int> effects)
     {
         foreach (var kv in effects)
@@ -103,6 +107,6 @@ public class GameManager : MonoBehaviour
         _pendingEffects.Remove(currentTurn);
     }
 
-    // System Collapse = Resources < 10 OR Stability < 20 at end of Turn 6 only.
+    // System Collapse is only evaluated at session end (after Turn 6's action resolves).
     public bool IsSystemCollapsed() => Resources < 10 || Stability < 20;
 }
