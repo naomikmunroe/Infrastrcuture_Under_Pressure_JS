@@ -1,10 +1,11 @@
+// Phase 4 stub. AI message logic is wired up here; condition assignment and
+// prompt content are populated in the AI phase.
+
 using UnityEngine;
 using UnityEngine.Events;
 
 public class AIBehaviour : MonoBehaviour
 {
-    public static AIBehaviour Instance { get; private set; }
-
     public AICondition condition = AICondition.Calm;
 
     public UnityEvent<string> OnAIMessage;
@@ -15,12 +16,6 @@ public class AIBehaviour : MonoBehaviour
     [Header("Pushy Condition")]
     [TextArea] public string[] pushyPrompts;
     public float pushyInterruptDelay = 3f;
-
-    private void Awake()
-    {
-        if (Instance != null && Instance != this) { Destroy(gameObject); return; }
-        Instance = this;
-    }
 
     public void OnTurnStart(int turn)
     {
@@ -48,6 +43,6 @@ public class AIBehaviour : MonoBehaviour
 
     private void BroadcastDelayed()
     {
-        OnAIMessage?.Invoke(GetPushyMessage(TurnManager.Instance.CurrentTurn));
+        OnAIMessage?.Invoke(GetPushyMessage(GameManager.Instance.CurrentTurn));
     }
 }

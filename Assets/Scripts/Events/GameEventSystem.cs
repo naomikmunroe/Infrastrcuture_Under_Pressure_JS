@@ -1,20 +1,15 @@
+// Phase 2 stub. Wires event presentation and player choice resolution to GameManager.
+
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
 
 public class GameEventSystem : MonoBehaviour
 {
-    public static GameEventSystem Instance { get; private set; }
-
     public EventData[] eventPool;
 
     public UnityEvent<EventData> OnEventTriggered;
     public UnityEvent<EventChoice> OnChoiceMade;
-
-    private void Awake()
-    {
-        if (Instance != null && Instance != this) { Destroy(gameObject); return; }
-        Instance = this;
-    }
 
     public void TriggerEvent(EventData eventData)
     {
@@ -23,15 +18,16 @@ public class GameEventSystem : MonoBehaviour
 
     public void ResolveChoice(EventChoice choice)
     {
-        VariableState.Instance.ApplyDelta(
-            choice.stabilityDelta,
-            choice.resourcesDelta,
-            choice.attentionDelta,
-            choice.pressureDelta
-        );
+        var effects = new Dictionary<string, int>
+        {
+            { "stability",  choice.stabilityDelta  },
+            { "resources",  choice.resourcesDelta  },
+            { "workload",   choice.workloadDelta   },
+            { "confidence", choice.confidenceDelta },
+        };
 
-        TelemetryLogger.Instance.LogTurn(TurnManager.Instance.CurrentTurn, choice);
+        GameManager.Instance.ApplyEffect(effects);
         OnChoiceMade?.Invoke(choice);
-        TurnManager.Instance.AdvanceTurn();
+        GameManager.Instance.AdvanceTurn();
     }
 }

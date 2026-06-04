@@ -7,10 +7,10 @@ public class EventData : ScriptableObject
     [TextArea] public string eventDescription;
 
     [Header("Variable Deltas")]
-    public float stabilityDelta;
-    public float resourcesDelta;
-    public float attentionDelta;
-    public float pressureDelta;
+    public int stabilityDelta;
+    public int resourcesDelta;
+    public int workloadDelta;
+    public int confidenceDelta;
 
     [Header("Player Choices")]
     public EventChoice[] choices;
@@ -20,8 +20,8 @@ public class EventData : ScriptableObject
 public class EventChoice
 {
     public string choiceText;
-    public float stabilityDelta;
-    public float resourcesDelta;
-    public float attentionDelta;
-    public float pressureDelta;
+    public int stabilityDelta;
+    public int resourcesDelta;
+    public int workloadDelta;
+    public int confidenceDelta;
 }

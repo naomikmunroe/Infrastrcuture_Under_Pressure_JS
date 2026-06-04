@@ -1,46 +1,27 @@
+// Phase 2+ stub. Turn advancement is handled by GameManager.AdvanceTurn() in Phase 1.
+// This component will coordinate UI transitions and event presentation in later phases.
+
 using UnityEngine;
 using UnityEngine.Events;
 
 public class TurnManager : MonoBehaviour
 {
-    public static TurnManager Instance { get; private set; }
-
-    public int CurrentTurn { get; private set; }
-    public bool SessionActive { get; private set; }
-
     public UnityEvent<int> OnTurnStarted;
     public UnityEvent OnSessionEnded;
 
-    private void Awake()
+    private void OnEnable()
     {
-        if (Instance != null && Instance != this) { Destroy(gameObject); return; }
-        Instance = this;
+        GameManager.Instance.OnGameOver += HandleGameOver;
     }
 
-    public void StartSession()
+    private void OnDisable()
     {
-        CurrentTurn = 0;
-        SessionActive = true;
-        AdvanceTurn();
+        if (GameManager.Instance != null)
+            GameManager.Instance.OnGameOver -= HandleGameOver;
     }
 
-    public void AdvanceTurn()
+    private void HandleGameOver()
     {
-        if (CurrentTurn >= GameManager.Instance.maxTurns)
-        {
-            EndSession();
-            return;
-        }
-
-        CurrentTurn++;
-        OnTurnStarted?.Invoke(CurrentTurn);
-        AIBehaviour.Instance.OnTurnStart(CurrentTurn);
-    }
-
-    private void EndSession()
-    {
-        SessionActive = false;
         OnSessionEnded?.Invoke();
-        TelemetryLogger.Instance.FinalizeSession();
     }
 }

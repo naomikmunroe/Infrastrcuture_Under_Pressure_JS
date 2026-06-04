@@ -1,3 +1,5 @@
+// Phase 5 stub. Attach to a GameObject and call LogTurn() after each player action.
+
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
@@ -5,29 +7,25 @@ using UnityEngine;
 
 public class TelemetryLogger : MonoBehaviour
 {
-    public static TelemetryLogger Instance { get; private set; }
-
-    private List<TurnRecord> records = new();
-    private string sessionId;
+    private List<TurnRecord> _records = new List<TurnRecord>();
+    private string _sessionId;
 
     private void Awake()
     {
-        if (Instance != null && Instance != this) { Destroy(gameObject); return; }
-        Instance = this;
-        sessionId = System.DateTime.Now.ToString("yyyyMMdd_HHmmss");
+        _sessionId = System.DateTime.Now.ToString("yyyyMMdd_HHmmss");
     }
 
-    public void LogTurn(int turn, EventChoice choice)
+    public void LogTurn(int turn, string choiceText)
     {
-        records.Add(new TurnRecord
+        var gm = GameManager.Instance;
+        _records.Add(new TurnRecord
         {
-            turn = turn,
-            aiCondition = AIBehaviour.Instance.condition.ToString(),
-            choiceText = choice.choiceText,
-            stabilityAfter = VariableState.Instance.SystemStability,
-            resourcesAfter = VariableState.Instance.ResourceReserves,
-            attentionAfter = VariableState.Instance.AttentionLoad,
-            pressureAfter = VariableState.Instance.PublicPressure
+            turn             = turn,
+            choiceText       = choiceText,
+            stabilityAfter   = gm.Stability,
+            resourcesAfter   = gm.Resources,
+            workloadAfter    = gm.Workload,
+            confidenceAfter  = gm.Confidence,
         });
     }
 
@@ -39,33 +37,32 @@ public class TelemetryLogger : MonoBehaviour
 
     private void WriteJSON()
     {
-        string path = Path.Combine(Application.persistentDataPath, $"session_{sessionId}.json");
-        string json = JsonUtility.ToJson(new SessionWrapper { records = records }, prettyPrint: true);
+        string path = Path.Combine(Application.persistentDataPath, $"session_{_sessionId}.json");
+        string json = JsonUtility.ToJson(new SessionWrapper { records = _records }, prettyPrint: true);
         File.WriteAllText(path, json);
-        Debug.Log($"Telemetry JSON saved: {path}");
+        Debug.Log($"[TelemetryLogger] JSON saved: {path}");
     }
 
     private void WriteCSV()
     {
-        string path = Path.Combine(Application.persistentDataPath, $"session_{sessionId}.csv");
+        string path = Path.Combine(Application.persistentDataPath, $"session_{_sessionId}.csv");
         var sb = new StringBuilder();
-        sb.AppendLine("Turn,AICondition,Choice,Stability,Resources,Attention,Pressure");
-        foreach (var r in records)
-            sb.AppendLine($"{r.turn},{r.aiCondition},{r.choiceText},{r.stabilityAfter},{r.resourcesAfter},{r.attentionAfter},{r.pressureAfter}");
+        sb.AppendLine("Turn,Choice,Stability,Resources,Workload,Confidence");
+        foreach (var r in _records)
+            sb.AppendLine($"{r.turn},{r.choiceText},{r.stabilityAfter},{r.resourcesAfter},{r.workloadAfter},{r.confidenceAfter}");
         File.WriteAllText(path, sb.ToString());
-        Debug.Log($"Telemetry CSV saved: {path}");
+        Debug.Log($"[TelemetryLogger] CSV saved: {path}");
     }
 
     [System.Serializable]
     private class TurnRecord
     {
-        public int turn;
-        public string aiCondition;
+        public int    turn;
         public string choiceText;
-        public float stabilityAfter;
-        public float resourcesAfter;
-        public float attentionAfter;
-        public float pressureAfter;
+        public int    stabilityAfter;
+        public int    resourcesAfter;
+        public int    workloadAfter;
+        public int    confidenceAfter;
     }
 
     [System.Serializable]
