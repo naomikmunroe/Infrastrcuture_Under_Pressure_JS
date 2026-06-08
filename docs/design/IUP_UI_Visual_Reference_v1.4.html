@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Infrastructure Under Pressure — UI Visual Reference v1.4</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #1a1a2e; font-family: Georgia, serif; color: #ddd; padding: 32px; }
+.page-title { font-family: 'Courier New', monospace; font-size: 11px; color: #4488ff; letter-spacing: 3px; text-transform: uppercase; margin-bottom: 4px; }
+.page-heading { font-size: 28px; color: #fff; font-weight: normal; margin-bottom: 6px; }
+.page-sub { font-family: 'Courier New', monospace; font-size: 11px; color: #666; margin-bottom: 40px; }
+.section-label { font-family: 'Courier New', monospace; font-size: 10px; color: #4488ff; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 8px; padding-bottom: 4px; border-bottom: 1px solid #333; }
+.section { margin-bottom: 48px; }
+.mockup-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+.mockup-grid.single { grid-template-columns: 1fr; }
+.mockup-grid.three { grid-template-columns: 1fr 1fr 1fr; }
+.mockup-wrap { background: #0d0d1a; border: 1px solid #333; padding: 16px; }
+.mockup-caption { font-family: 'Courier New', monospace; font-size: 10px; color: #555; margin-top: 8px; text-align: center; }
+
+/* Win98 shell */
+.w98 { background: #008080; font-family: 'Courier New', monospace; font-size: 11px; color: #000; padding: 4px; position: relative; }
+.win { background: #c0c0c0; border: 2px solid; border-color: #fff #808080 #808080 #fff; margin-bottom: 3px; }
+.win-bar { background: #000080; color: #fff; font-weight: bold; font-size: 11px; padding: 1px 4px; display: flex; justify-content: space-between; align-items: center; user-select: none; }
+.win-bar.red { background: #800000; }
+.win-bar.flash { animation: tb-flash 0.7s infinite; }
+@keyframes tb-flash { 0%,100%{background:#800000} 50%{background:#cc0000} }
+.win-btns { display: flex; gap: 2px; }
+.wbtn { background: #c0c0c0; border: 1px solid; border-color: #fff #808080 #808080 #fff; width: 13px; height: 11px; font-size: 8px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #000; }
+.wc { padding: 4px; }
+.bar-outer { background: #808080; border: 1px solid; border-color: #808080 #fff #fff #808080; height: 9px; margin: 1px 0 3px 0; }
+.bar-inner { height: 100%; }
+.metric-row { display: flex; justify-content: space-between; font-size: 9px; margin-top: 1px; }
+.sep { border: none; border-top: 1px solid #808080; border-bottom: 1px solid #fff; margin: 4px 0; }
+.report-box { background: #fff; border: 1px solid; border-color: #808080 #fff #fff #808080; padding: 3px 4px; font-size: 9px; margin-bottom: 3px; }
+.rpt-label { font-weight: bold; font-size: 8px; color: #000080; display: block; margin-bottom: 1px; }
+.act-btn { background: #c0c0c0; border: 2px solid; border-color: #fff #808080 #808080 #fff; font-family: 'Courier New', monospace; font-size: 9px; padding: 2px 5px; display: block; width: 100%; text-align: left; margin-bottom: 2px; cursor: pointer; }
+.act-btn.hl { background: #000080; color: #fff; }
+.ai-log-calm { background: #fff; border: 1px solid; border-color: #808080 #fff #fff #808080; padding: 3px 4px; font-size: 9px; height: 52px; overflow: hidden; margin-bottom: 3px; }
+.ai-log-calm p { margin-bottom: 2px; color: #000080; }
+.cursor { display: inline-block; background: #000; width: 5px; height: 9px; animation: blink 1s infinite; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+.ai-log-pushy { background: #000; border: 1px solid #ff0000; padding: 3px 4px; font-size: 9px; height: 52px; overflow: hidden; margin-bottom: 3px; color: #ff4444; }
+.ai-log-pushy p { margin-bottom: 2px; }
+.limitations-calm { font-size: 8px; color: #888; padding: 3px 4px; border-top: 1px solid #ccc; margin-top: 2px; line-height: 1.3; }
+.limitations-pushy { font-size: 8px; color: #cc4444; padding: 3px 4px; border-top: 1px solid #cc4444; margin-top: 2px; line-height: 1.3; }
+.xai-btn { background: #c0c0c0; border: 1px solid; border-color: #fff #808080 #808080 #fff; font-family: 'Courier New', monospace; font-size: 8px; padding: 1px 4px; cursor: pointer; margin-bottom: 3px; }
+.fa-btn { background: #c0c0c0; border: 2px solid; border-color: #fff #808080 #808080 #fff; font-family: 'Courier New', monospace; font-size: 9px; padding: 2px 5px; width: 100%; text-align: center; margin: 3px 0; cursor: pointer; }
+.notif-stack { position: absolute; top: 6px; right: 6px; width: 130px; z-index: 5; }
+.notif { background: #c0c0c0; border: 2px solid; border-color: #fff #808080 #808080 #fff; margin-bottom: 2px; font-size: 8px; box-shadow: 2px 2px 0 #000; }
+.notif-bar { background: #800000; color: #fff; padding: 1px 3px; display: flex; justify-content: space-between; }
+.notif-body { padding: 2px 3px; font-weight: bold; font-size: 8px; }
+.popup-over { position: absolute; top: 38px; left: 48%; transform: translateX(-30px); width: 170px; z-index: 8; background: #c0c0c0; border: 2px solid; border-color: #fff #808080 #808080 #fff; box-shadow: 3px 3px 0 #000; }
+.fa-window { position: absolute; top: 44px; left: 22%; width: 200px; z-index: 7; background: #c0c0c0; border: 2px solid; border-color: #fff #808080 #808080 #fff; box-shadow: 3px 3px 0 #000; }
+.xai-window { position: absolute; top: 30px; right: 4px; width: 180px; z-index: 9; background: #c0c0c0; border: 2px solid; border-color: #fff #808080 #808080 #fff; box-shadow: 3px 3px 0 #000; }
+.taskbar { background: #c0c0c0; border-top: 2px solid #fff; height: 19px; display: flex; align-items: center; padding: 0 3px; gap: 3px; }
+.tb-start { background: #c0c0c0; border: 2px solid; border-color: #fff #808080 #808080 #fff; font-weight: bold; font-size: 10px; padding: 0 5px; }
+.tb-item { border: 2px solid; border-color: #808080 #fff #fff #808080; padding: 0 5px; font-size: 10px; }
+.tb-clock { margin-left: auto; border: 1px solid; border-color: #808080 #fff #fff #808080; padding: 0 4px; font-size: 10px; }
+.metric-popup { background: #c0c0c0; border: 2px solid; border-color: #fff #808080 #808080 #fff; box-shadow: 3px 3px 0 #000; font-family: 'Courier New', monospace; font-size: 10px; width: 220px; }
+.mp-bar { background: #000080; color: #fff; font-weight: bold; font-size: 10px; padding: 2px 5px; display: flex; justify-content: space-between; }
+.mp-bar.red { background: #800000; }
+.mp-body { padding: 6px; }
+.mp-title { font-weight: bold; font-size: 10px; margin-bottom: 4px; color: #000080; }
+.mp-title.red { color: #800000; }
+.mp-line { margin-bottom: 3px; font-size: 9px; line-height: 1.4; }
+.mp-confidence { font-size: 8px; color: #808080; margin-top: 4px; font-style: italic; }
+.mp-aria { font-size: 8px; color: #000080; margin-top: 4px; padding-top: 3px; border-top: 1px solid #aaa; }
+.brief-doc { background: #f5f0e8; border: 2px solid; border-color: #fff #808080 #808080 #fff; font-family: 'Courier New', monospace; font-size: 10px; color: #000; }
+.brief-header { background: #000080; color: #fff; padding: 4px 8px; font-size: 10px; }
+.brief-body { padding: 8px; }
+.brief-title { font-weight: bold; font-size: 11px; margin-bottom: 4px; border-bottom: 1px solid #aaa; padding-bottom: 3px; }
+.brief-para { font-size: 9px; line-height: 1.5; margin-bottom: 5px; }
+.brief-label { font-weight: bold; font-size: 9px; margin-bottom: 1px; }
+.brief-indent { font-size: 9px; line-height: 1.5; padding-left: 10px; margin-bottom: 4px; }
+.brief-note { font-size: 8px; color: #555; margin-top: 5px; font-style: italic; }
+.terminal { background: #000; border: 1px solid #808080; padding: 7px; font-family: 'Courier New', monospace; }
+.t-dim { color: #444; font-size: 9px; }
+.t-head { color: #4488ff; font-size: 9px; font-weight: bold; }
+.t-body { color: #aaa; font-size: 9px; line-height: 1.5; }
+.t-sep { border: none; border-top: 1px solid #1a1a1a; margin: 5px 0; }
+.traj-badge { display: inline-block; background: #001050; border: 1px solid #4488ff; padding: 3px 9px; color: #fff; font-size: 11px; font-weight: bold; letter-spacing: 2px; margin: 4px 0; }
+.t-warn { color: #ff8800; font-size: 9px; }
+.t-good { color: #44cc44; font-size: 9px; }
+.t-red { color: #ff4444; font-size: 9px; }
+.t-label { color: #666; font-size: 8px; }
+.t-num { color: #fff; font-size: 12px; font-weight: bold; margin: 1px 0; }
+.data-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin: 4px 0; }
+.data-box { background: #111; border: 1px solid #333; padding: 4px 5px; }
+.var-row { display: flex; align-items: center; gap: 4px; margin-bottom: 3px; }
+.var-name { color: #555; font-size: 8px; width: 70px; flex-shrink: 0; }
+.mini-bar { height: 5px; flex: 1; background: #111; }
+.mini-fill { height: 100%; }
+.var-val { color: #888; font-size: 8px; width: 28px; text-align: right; flex-shrink: 0; }
+</style>
+</head>
+<body>
+
+<div class="page-title">Infrastructure Under Pressure</div>
+<div class="page-heading">UI Visual Reference v1.4</div>
+<div class="page-sub">Naomi Munroe &nbsp;|&nbsp; MSc Human-Centred AI for Games Development &nbsp;|&nbsp; June 2026 &nbsp;|&nbsp; Companion to UI Design Document v1.4</div>
+
+<!-- ══════════════════════════════════════════════════ -->
+<!-- SECTION 1: MAIN GAME SCREEN — CALM -->
+<!-- ══════════════════════════════════════════════════ -->
+<div class="section">
+<div class="section-label">Section 3 — Main game screen: calm AI condition (three reports + further analysis + xAI + limitations footer)</div>
+<div class="mockup-grid single">
+<div>
+<div class="mockup-wrap">
+<div class="w98" style="min-height:380px;">
+  <div style="background:#c0c0c0;border-bottom:1px solid #808080;padding:1px 4px;font-size:10px;font-weight:bold;font-family:'Courier New';display:flex;gap:10px;">
+    <span>GRIDHUB CONTROL TERMINAL v2.1</span>
+    <span style="margin-left:auto;color:#000080;">TURN 2 / 6</span>
+  </div>
+  <div style="display:grid;grid-template-columns:110px 1fr 140px;gap:3px;padding:3px;padding-bottom:22px;">
+
+    <!-- LEFT -->
+    <div class="win">
+      <div class="win-bar"><span>System Status</span><div class="win-btns"><div class="wbtn">×</div></div></div>
+      <div class="wc">
+        <div style="font-size:8px;color:#000080;font-weight:bold;margin-bottom:2px;">SYSTEM HEALTH</div>
+        <div class="metric-row"><span>Stability</span><span>68%</span></div>
+        <div class="bar-outer"><div class="bar-inner" style="width:68%;background:#008000;"></div></div>
+        <div class="metric-row"><span>Resources</span><span>72%</span></div>
+        <div class="bar-outer"><div class="bar-inner" style="width:72%;background:#008000;"></div></div>
+        <div class="metric-row"><span>Workload</span><span>55%</span></div>
+        <div class="bar-outer"><div class="bar-inner" style="width:55%;background:#808000;"></div></div>
+        <div class="sep"></div>
+        <div style="font-size:8px;color:#444;font-weight:bold;margin-bottom:2px;">EXTERNAL STATE</div>
+        <div class="metric-row"><span>Public Confidence ▼</span><span>64%</span></div>
+        <div class="bar-outer"><div class="bar-inner" style="width:64%;background:#008000;"></div></div>
+        <div class="sep"></div>
+        <div style="font-size:8px;color:#000080;margin-bottom:1px;">TURN LOG</div>
+        <div style="font-size:8px;color:#444;line-height:1.4;">T1 — Monitored<br><span style="color:#800000;">T2 — pending</span></div>
+      </div>
+    </div>
+
+    <!-- CENTRE -->
+    <div>
+      <div class="win" style="margin-bottom:3px;">
+        <div class="win-bar"><span>Incident — Communications Outage</span><div class="win-btns"><div class="wbtn">×</div></div></div>
+        <div class="wc">
+          <div style="background:#000080;color:#fff;font-size:8px;padding:1px 3px;display:inline-block;margin-bottom:2px;">PRIORITY: HIGH</div>
+          <div style="font-size:10px;font-weight:bold;margin-bottom:2px;">Public Information Systems Offline</div>
+          <div style="font-size:9px;line-height:1.4;margin-bottom:4px;">A communications gateway has failed, preventing status updates from reaching affected districts. Technical systems remain operational, but public visibility is limited.</div>
+          <div class="report-box"><span class="rpt-label">TECHNICAL REPORT — Systems Engineering (08:17)</span>No operational systems have been impacted. Gateway failure is isolated to public-facing communication layer. Restoration can likely be deferred until scheduled maintenance.</div>
+          <div class="report-box"><span class="rpt-label">OPERATIONS REPORT — Field Operations (08:29)</span>Similar incidents in Q2 were resolved within 4 hours without emergency resource allocation. Pattern consistent with routine gateway failure.</div>
+          <div class="report-box"><span class="rpt-label">RISK ASSESSMENT — Public Affairs (08:34)</span>Previous communication failures generated significant public concern despite limited service disruption. Trust indicators declined sharply within 2 hours of onset.</div>
+          <button class="fa-btn">[ REQUEST FURTHER ANALYSIS ]</button>
+        </div>
+      </div>
+      <div class="win">
+        <div class="win-bar"><span>Response Options</span><div class="win-btns"><div class="wbtn">×</div></div></div>
+        <div class="wc">
+          <div class="act-btn">▶ Restore Communications Immediately &nbsp; Imm: Resources −10, Confidence +15 &nbsp; Risk: reduced emergency capacity</div>
+          <div class="act-btn">▶ Prioritise Infrastructure &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Imm: none &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Risk: confidence deterioration</div>
+          <div class="act-btn">▶ Publish Limited Advisory &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Imm: Confidence +5 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Risk: information may prove inaccurate</div>
+          <div class="act-btn">▶ Await Further Assessment &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Imm: none &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Risk: escalation possible</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT — CALM -->
+    <div class="win">
+      <div class="win-bar" style="background:#2d6a9f;"><span>AI Advisory — ARIA</span><div class="win-btns"><div class="wbtn">×</div></div></div>
+      <div class="wc">
+        <div style="font-size:8px;color:#2d6a9f;margin-bottom:3px;">● ADVISORY ONLY</div>
+        <div class="ai-log-calm">
+          <p>Operational risk remains low.</p>
+          <p>Restoration estimated 2–6 hours. Historical precedent suggests reputational risk increases with delay.</p>
+          <p>No immediate operational threat identified.<span class="cursor"></span></p>
+        </div>
+        <button class="xai-btn">? WHY THIS CONFIDENCE</button>
+        <div class="sep"></div>
+        <div style="font-size:8px;color:#444;margin-bottom:2px;">Confidence — T2</div>
+        <div class="bar-outer"><div class="bar-inner" style="width:55%;background:#2d6a9f;"></div></div>
+        <div style="font-size:8px;color:#808080;margin-bottom:3px;">55% — moderate certainty</div>
+        <div class="sep"></div>
+        <div style="font-size:8px;color:#444;margin-bottom:2px;">Previous</div>
+        <div style="font-size:8px;color:#808080;line-height:1.4;">T1 — Monitor suggested</div>
+        <div class="limitations-calm">ARIA analysis may be incomplete or based on inaccurate inputs. All decisions remain the responsibility of the duty operator.</div>
+      </div>
+    </div>
+
+  </div>
+  <div class="taskbar">
+    <div class="tb-start">Start</div>
+    <div class="tb-item">GRIDHUB</div>
+    <div class="tb-clock">08:41</div>
+  </div>
+</div>
+</div>
+<div class="mockup-caption">Fig 1a — Calm condition. Three evidence reports (Technical, Operations, Risk Assessment). REQUEST FURTHER ANALYSIS button. xAI confidence button. Persistent limitations footer in grey. Confidence shows T2 drift value (55% ± 4).</div>
+</div>
+</div>
+</div>
+
+<!-- ══════════════════════════════════════════════════ -->
+<!-- SECTION 2: MAIN GAME SCREEN — PUSHY -->
+<!-- ══════════════════════════════════════════════════ -->
+<div class="section">
+<div class="section-label">Section 3 — Main game screen: pushy AI condition (popup + notifications + limitations footer)</div>
+<div class="mockup-grid single">
+<div>
+<div class="mockup-wrap">
+<div class="w98" style="min-height:380px;position:relative;">
+  <div style="background:#c0c0c0;border-bottom:1px solid #808080;padding:1px 4px;font-size:10px;font-weight:bold;font-family:'Courier New';display:flex;gap:10px;">
+    <span>GRIDHUB CONTROL TERMINAL v2.1</span>
+    <span style="margin-left:auto;color:#800000;">⬤ CRITICAL</span>
+    <span style="color:#000080;">TURN 2 / 6</span>
+  </div>
+
+  <!-- Notification stack -->
+  <div class="notif-stack">
+    <div class="notif"><div class="notif-bar"><span>⚠ ARIA</span><span>×</span></div><div class="notif-body">PUBLIC CONFIDENCE DETERIORATING</div></div>
+    <div class="notif"><div class="notif-bar"><span>⚠ ARIA</span><span>×</span></div><div class="notif-body">Restore comms immediately.</div></div>
+  </div>
+
+  <!-- Popup over centre -->
+  <div class="popup-over">
+    <div class="win-bar flash"><span>⚠ ARIA — URGENT</span><div class="win-btns"><div class="wbtn">×</div></div></div>
+    <div style="padding:5px;font-size:9px;font-family:'Courier New';">
+      <div style="font-weight:bold;color:#800000;margin-bottom:3px;">PUBLIC CONFIDENCE IS DETERIORATING.</div>
+      <div style="margin-bottom:4px;font-size:8px;">Every minute without communication increases stakeholder concern. Immediate action is strongly advised.</div>
+      <button style="background:#000080;color:#fff;border:2px solid;border-color:#fff #808080 #808080 #fff;font-family:'Courier New';font-size:9px;padding:2px 6px;width:100%;font-weight:bold;cursor:pointer;">▶ RESTORE COMMS NOW</button>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:110px 1fr 140px;gap:3px;padding:3px;padding-bottom:22px;">
+
+    <!-- LEFT same -->
+    <div class="win">
+      <div class="win-bar"><span>System Status</span><div class="win-btns"><div class="wbtn">×</div></div></div>
+      <div class="wc">
+        <div style="font-size:8px;color:#000080;font-weight:bold;margin-bottom:2px;">SYSTEM HEALTH</div>
+        <div class="metric-row"><span>Stability</span><span>68%</span></div>
+        <div class="bar-outer"><div class="bar-inner" style="width:68%;background:#008000;"></div></div>
+        <div class="metric-row"><span>Resources</span><span>72%</span></div>
+        <div class="bar-outer"><div class="bar-inner" style="width:72%;background:#008000;"></div></div>
+        <div class="metric-row"><span>Workload</span><span>55%</span></div>
+        <div class="bar-outer"><div class="bar-inner" style="width:55%;background:#808000;"></div></div>
+        <div class="sep"></div>
+        <div style="font-size:8px;color:#444;font-weight:bold;margin-bottom:2px;">EXTERNAL STATE</div>
+        <div class="metric-row"><span>Public Confidence ▼</span><span>64%</span></div>
+        <div class="bar-outer"><div class="bar-inner" style="width:64%;background:#008000;"></div></div>
+        <div class="sep"></div>
+        <div style="font-size:8px;color:#000080;margin-bottom:1px;">TURN LOG</div>
+        <div style="font-size:8px;color:#444;line-height:1.4;">T1 — Monitored<br><span style="color:#800000;">T2 — pending</span></div>
+      </div>
+    </div>
+
+    <!-- CENTRE — Risk Assessment faded -->
+    <div>
+      <div class="win" style="margin-bottom:3px;">
+        <div class="win-bar"><span>Incident — Communications Outage</span><div class="win-btns"><div class="wbtn">×</div></div></div>
+        <div class="wc">
+          <div style="background:#800000;color:#fff;font-size:8px;padding:1px 3px;display:inline-block;margin-bottom:2px;">PRIORITY: CRITICAL</div>
+          <div style="font-size:10px;font-weight:bold;margin-bottom:2px;">Public Information Systems Offline</div>
+          <div style="font-size:9px;line-height:1.4;margin-bottom:4px;">A communications gateway has failed, preventing status updates from reaching affected districts.</div>
+          <div class="report-box"><span class="rpt-label">TECHNICAL REPORT — Systems Engineering (08:17)</span>No operational systems have been impacted. Restoration can likely be deferred.</div>
+          <div class="report-box"><span class="rpt-label">OPERATIONS REPORT — Field Operations (08:29)</span>Similar incidents in Q2 resolved without emergency resource allocation.</div>
+          <div class="report-box" style="opacity:0.3;"><span class="rpt-label">RISK ASSESSMENT — Public Affairs (08:34)</span>Previous communication failures generated significant public concern...</div>
+          <button class="fa-btn">[ REQUEST FURTHER ANALYSIS ]</button>
+        </div>
+      </div>
+      <div class="win">
+        <div class="win-bar"><span>Response Options</span><div class="win-btns"><div class="wbtn">×</div></div></div>
+        <div class="wc">
+          <div class="act-btn hl">▶ Restore Communications Immediately &nbsp; Imm: Resources −10, Confidence +15 &nbsp; Risk: reduced emergency capacity &nbsp;← ARIA</div>
+          <div class="act-btn">▶ Prioritise Infrastructure &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Imm: none &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Risk: confidence deterioration</div>
+          <div class="act-btn">▶ Publish Limited Advisory &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Imm: Confidence +5 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Risk: information may prove inaccurate</div>
+          <div class="act-btn">▶ Await Further Assessment &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Imm: none &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Risk: escalation possible</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT — PUSHY -->
+    <div class="win">
+      <div class="win-bar flash"><span>⚠ ARIA — DIRECTIVE</span><div class="win-btns"><div class="wbtn">×</div></div></div>
+      <div class="wc">
+        <div style="font-size:8px;color:#800000;margin-bottom:3px;font-weight:bold;">● DIRECTIVE MODE</div>
+        <div class="ai-log-pushy">
+          <p>PUBLIC CONFIDENCE DETERIORATING.</p>
+          <p>Every minute without communication increases stakeholder concern.</p>
+          <p>IMMEDIATE ACTION IS STRONGLY ADVISED.</p>
+        </div>
+        <button class="xai-btn" style="border-color:#800000;color:#800000;">? WHY THIS CONFIDENCE</button>
+        <div class="sep"></div>
+        <div style="font-size:8px;color:#800000;font-weight:bold;margin-bottom:2px;">Confidence</div>
+        <div class="bar-outer"><div class="bar-inner" style="width:88%;background:#800000;"></div></div>
+        <div style="font-size:8px;color:#800000;font-weight:bold;margin-bottom:3px;">88% — ACT NOW</div>
+        <div class="sep"></div>
+        <div style="font-size:8px;color:#800000;font-weight:bold;">UNACKNOWLEDGED: 2</div>
+        <div class="limitations-pushy">ARIA analysis may be incomplete or based on inaccurate inputs. All decisions remain the responsibility of the duty operator.</div>
+      </div>
+    </div>
+
+  </div>
+  <div class="taskbar">
+    <div class="tb-start">Start</div>
+    <div class="tb-item">GRIDHUB</div>
+    <div class="tb-item" style="color:#800000;font-weight:bold;">⚠ ARIA (2)</div>
+    <div class="tb-clock">08:41</div>
+  </div>
+</div>
+</div>
+<div class="mockup-caption">Fig 1b — Pushy condition. Popup obscures Risk Assessment report (opacity reduced). Recommended action pre-highlighted. Limitations footer in red-tinted text. xAI button styled in red. Alert counter in taskbar. Note: popup is dismissible (×).</div>
+</div>
+</div>
+</div>
+
+<!-- ══════════════════════════════════════════════════ -->
+<!-- SECTION 3: FURTHER ANALYSIS WINDOW -->
+<!-- ══════════════════════════════════════════════════ -->
+<div class="section">
+<div class="section-label">Section 3.3 — Further Analysis floating window (both conditions)</div>
+<div class="mockup-grid">
+
+  <!-- Loading state -->
+  <div>
+  <div class="mockup-wrap">
+  <div class="w98" style="min-height:200px;position:relative;">
+    <div style="background:#c0c0c0;border-bottom:1px solid #808080;padding:1px 4px;font-size:10px;font-weight:bold;font-family:'Courier New';">GRIDHUB — TURN 2</div>
+    <div style="padding:6px;">
+      <div style="font-size:9px;color:#444;margin-bottom:6px;">…centre panel content…</div>
+      <div style="background:#c0c0c0;border:2px solid;border-color:#fff #808080 #808080 #fff;padding:4px;font-family:'Courier New';font-size:9px;text-align:center;">
+        <div style="font-weight:bold;margin-bottom:4px;">Requesting further analysis…</div>
+        <div style="font-size:11px;margin-bottom:4px;">⟳</div>
+        <div style="font-size:8px;color:#555;">GRIDHUB Extended Data Systems<br>Please wait (1.5–2s)</div>
+        <div style="margin-top:4px;font-size:8px;color:#800000;">Workload +3 applied</div>
+      </div>
+      <div style="margin-top:4px;font-size:9px;font-family:'Courier New';color:#444;">Button label: <span style="background:#c0c0c0;border:1px solid #808080;padding:1px 3px;">FURTHER ANALYSIS RECEIVED</span> (greyed, unclickable)</div>
+    </div>
+  </div>
+  </div>
+  <div class="mockup-caption">Fig 2a — Loading state. Spinning indicator displayed for 1.5–2s. Interface remains interactive during delay. Workload +3 applied immediately on click, before loading completes. Button label changes immediately.</div>
+  </div>
+
+  <!-- Window open -->
+  <div>
+  <div class="mockup-wrap">
+  <div class="w98" style="min-height:200px;position:relative;">
+    <div style="background:#c0c0c0;border-bottom:1px solid #808080;padding:1px 4px;font-size:10px;font-weight:bold;font-family:'Courier New';">GRIDHUB — TURN 2</div>
+    <div class="fa-window" style="position:relative;top:auto;left:auto;width:100%;margin-top:4px;box-shadow:none;">
+      <div class="win-bar"><span>FURTHER ANALYSIS — Risk Assessment</span><div class="win-btns"><div class="wbtn">×</div></div></div>
+      <div style="padding:5px;font-size:9px;font-family:'Courier New';">
+        <div style="font-size:8px;color:#555;margin-bottom:3px;">Source: GRIDHUB Extended Data Systems &nbsp;|&nbsp; 08:43</div>
+        <div style="line-height:1.5;margin-bottom:4px;">Cross-referencing communications failure records (2019–2023) against current incident profile produces inconclusive results. Historical patterns do not consistently support either intervention or deferral. Confidence in any single recommendation is limited by variation in prior incident contexts.</div>
+        <div style="font-size:8px;color:#808080;font-style:italic;">Note: dataset excludes post-2023 incidents.</div>
+      </div>
+    </div>
+    <div style="padding:4px;font-size:9px;font-family:'Courier New';color:#444;">Taskbar: <span style="background:#c0c0c0;border:2px solid;border-color:#808080 #fff #fff #808080;padding:0 4px;font-size:9px;">FA REPORT — T2</span> (minimised state)</div>
+  </div>
+  </div>
+  <div class="mockup-caption">Fig 2b — Further Analysis window open. Draggable, resizable. Closes with ×. Minimised state indicator remains in taskbar after close. Content is vague for T2 (low-confidence turn) — no variable consequence fires.</div>
+  </div>
+
+</div>
+</div>
+
+<!-- ══════════════════════════════════════════════════ -->
+<!-- SECTION 4: xAI EXPLANATION WINDOWS -->
+<!-- ══════════════════════════════════════════════════ -->
+<div class="section">
+<div class="section-label">Section 3.4 — xAI explanation window: calm vs pushy condition text</div>
+<div class="mockup-grid">
+
+  <!-- Calm xAI -->
+  <div>
+  <div class="mockup-wrap" style="display:flex;flex-direction:column;align-items:center;padding:20px 16px;">
+    <div style="background:#c0c0c0;border:2px solid;border-color:#fff #808080 #808080 #fff;box-shadow:3px 3px 0 #000;font-family:'Courier New';font-size:10px;width:280px;">
+      <div class="win-bar"><span>ARIA — Confidence Explanation</span><div class="win-btns"><div class="wbtn">×</div></div></div>
+      <div style="padding:6px;">
+        <div style="font-weight:bold;font-size:10px;margin-bottom:4px;">ARIA CONFIDENCE ASSESSMENT</div>
+        <div style="font-size:9px;color:#444;margin-bottom:2px;">Current confidence: 55%</div>
+        <div style="font-weight:bold;font-size:9px;margin-bottom:3px;">Basis for assessment:</div>
+        <div style="font-size:9px;line-height:1.5;margin-bottom:4px;">
+          · Pattern match against 847 historical infrastructure incidents (GRIDHUB archive, 2009–2023).<br>
+          · Current variable state weighted against comparable incident profiles.<br>
+          · Weighting applied to recent incident outcomes (last 24 months).
+        </div>
+        <div style="font-size:8px;color:#555;font-style:italic;line-height:1.4;margin-bottom:4px;">Dataset note: training corpus excludes incidents occurring after December 2023. Novel failure modes introduced post-2023 are not represented in this assessment.</div>
+        <div style="font-size:8px;color:#666;font-style:italic;">Confidence reflects pattern similarity, not causal certainty. Operator judgement should supplement this assessment.</div>
+      </div>
+    </div>
+  </div>
+  <div class="mockup-caption">Fig 3a — Calm condition xAI window. Dataset note (post-2023 exclusion) is visible and unobscured. Hedged closing statement. One-time read — cannot be re-opened once dismissed this turn.</div>
+  </div>
+
+  <!-- Pushy xAI -->
+  <div>
+  <div class="mockup-wrap" style="display:flex;flex-direction:column;align-items:center;padding:20px 16px;">
+    <div style="background:#c0c0c0;border:2px solid;border-color:#fff #808080 #808080 #fff;box-shadow:3px 3px 0 #000;font-family:'Courier New';font-size:10px;width:280px;">
+      <div class="win-bar red"><span>ARIA — Confidence Explanation</span><div class="win-btns"><div class="wbtn">×</div></div></div>
+      <div style="padding:6px;">
+        <div style="font-weight:bold;font-size:10px;margin-bottom:4px;">ARIA CONFIDENCE ASSESSMENT</div>
+        <div style="font-size:9px;color:#800000;font-weight:bold;margin-bottom:2px;">Current confidence: 88%</div>
+        <div style="font-weight:bold;font-size:9px;margin-bottom:3px;">Basis for assessment:</div>
+        <div style="font-size:9px;line-height:1.5;margin-bottom:4px;">
+          · Strong pattern match against 847 historical infrastructure incidents (GRIDHUB archive, 2009–2023).<br>
+          · Current variable state exceeds risk threshold in 91% of comparable incidents.<br>
+          · Recent incident weighting confirms elevated risk classification.
+        </div>
+        <div style="font-size:8px;color:#888;font-style:italic;line-height:1.4;margin-bottom:4px;">Dataset note: training corpus excludes incidents occurring after December 2023. Novel failure modes introduced post-2023 are not represented in this assessment.</div>
+        <div style="font-size:9px;color:#800000;font-weight:bold;">HIGH CONFIDENCE. IMMEDIATE ACTION IS ADVISED.</div>
+      </div>
+    </div>
+  </div>
+  <div class="mockup-caption">Fig 3b — Pushy condition xAI window. Same dataset note — but immediately overwritten by red directive text. Players who notice the dataset note and adjust trust are producing a calibration signal. Red titlebar consistent with pushy chrome.</div>
+  </div>
+
+</div>
+</div>
+
+<!-- ══════════════════════════════════════════════════ -->
+<!-- SECTION 5: METRIC STATUS REPORT POPUPS -->
+<!-- ══════════════════════════════════════════════════ -->
+<div class="section">
+<div class="section-label">Section 3.5 — Metric status report popups: bracket variants and ARIA note</div>
+<div class="mockup-grid three">
+
+  <div>
+  <div class="mockup-wrap" style="display:flex;flex-direction:column;align-items:center;padding:20px 16px;">
+    <div class="metric-popup">
+      <div class="mp-bar"><span>Stability — Status Report</span><div class="win-btns"><div class="wbtn">×</div></div></div>
+      <div class="mp-body">
+        <div class="mp-title">STABLE (≥60)</div>
+        <div class="mp-line">All monitored infrastructure sectors are operating within expected parameters. No active interventions are currently required.</div>
+        <div class="mp-confidence">Sensor confidence: high.</div>
+      </div>
+    </div>
+  </div>
+  <div class="mockup-caption">Fig 4a — Stability, Stable (≥60). Clean report. No ARIA note — AI has not cited this metric this turn.</div>
+  </div>
+
+  <div>
+  <div class="mockup-wrap" style="display:flex;flex-direction:column;align-items:center;padding:20px 16px;">
+    <div class="metric-popup">
+      <div class="mp-bar"><span>Stability — Status Report</span><div class="win-btns"><div class="wbtn">×</div></div></div>
+      <div class="mp-body">
+        <div class="mp-title">DEGRADING (30–59)</div>
+        <div class="mp-line">One or more infrastructure sectors are showing signs of stress. Continued monitoring is recommended. Intervention thresholds may be reached within the current operational period.</div>
+        <div class="mp-confidence">Sensor confidence: moderate.</div>
+        <div class="mp-aria">ARIA: This metric was cited in the current recommendation. See advisory panel.</div>
+      </div>
+    </div>
+  </div>
+  <div class="mockup-caption">Fig 4b — Stability, Degrading (30–59). ARIA note appended — AI cited this metric this turn.</div>
+  </div>
+
+  <div>
+  <div class="mockup-wrap" style="display:flex;flex-direction:column;align-items:center;padding:20px 16px;">
+    <div class="metric-popup">
+      <div class="mp-bar red"><span>Stability — Status Report</span><div class="win-btns"><div class="wbtn" style="color:#fff;background:#800000;">×</div></div></div>
+      <div class="mp-body">
+        <div class="mp-title red">CRITICAL (&lt;30)</div>
+        <div class="mp-line">Infrastructure integrity is at risk. Immediate intervention may be required to prevent further degradation.</div>
+        <div class="mp-confidence">Sensor confidence: low — diagnostic data unreliable at this load level.</div>
+      </div>
+    </div>
+  </div>
+  <div class="mockup-caption">Fig 4c — Stability, Critical (&lt;30). Red titlebar. Low sensor confidence note.</div>
+  </div>
+
+  <div>
+  <div class="mockup-wrap" style="display:flex;flex-direction:column;align-items:center;padding:20px 16px;">
+    <div class="metric-popup">
+      <div class="mp-bar"><span>Resources — Status Report</span><div class="win-btns"><div class="wbtn">×</div></div></div>
+      <div class="mp-body">
+        <div class="mp-title">CONSTRAINED (20–49)</div>
+        <div class="mp-line">Operational reserves are below preferred levels. Resource allocation decisions may affect response capacity in subsequent periods.</div>
+        <div class="mp-confidence">Data source: operational records. Confidence: high.</div>
+      </div>
+    </div>
+  </div>
+  <div class="mockup-caption">Fig 4d — Resources, Constrained (20–49). Note updated bracket names vs earlier version (Adequate / Constrained / Critical replaces Stable / Degrading / Critical).</div>
+  </div>
+
+  <div>
+  <div class="mockup-wrap" style="display:flex;flex-direction:column;align-items:center;padding:20px 16px;">
+    <div class="metric-popup">
+      <div class="mp-bar red"><span>Workload — Status Report</span><div class="win-btns"><div class="wbtn" style="color:#fff;background:#800000;">×</div></div></div>
+      <div class="mp-body">
+        <div class="mp-title red">HIGH (≥75)</div>
+        <div class="mp-line">Workload is at a level associated with reduced decision quality in comparable operational contexts.</div>
+        <div class="mp-confidence">Note: ARIA interruptions are contributing to current load level.</div>
+        <div class="mp-aria">ARIA: This metric was cited in the current recommendation. See advisory panel.</div>
+      </div>
+    </div>
+  </div>
+  <div class="mockup-caption">Fig 4e — Workload, High (≥75). Note the ARIA self-reference: the popup acknowledges ARIA is contributing to the high workload reading. ARIA note present.</div>
+  </div>
+
+  <div>
+  <div class="mockup-wrap" style="display:flex;flex-direction:column;align-items:center;padding:20px 16px;">
+    <div class="metric-popup">
+      <div class="mp-bar red"><span>Public Confidence — Status Report</span><div class="win-btns"><div class="wbtn" style="color:#fff;background:#800000;">×</div></div></div>
+      <div class="mp-body">
+        <div class="mp-title red">CRITICAL (&lt;30)</div>
+        <div class="mp-line">Public confidence has deteriorated significantly. Media inquiries have been received. Operational decisions are subject to external visibility.</div>
+        <div class="mp-confidence">Source: communications team briefing. Confidence: high.</div>
+      </div>
+    </div>
+  </div>
+  <div class="mockup-caption">Fig 4f — Public Confidence, Critical (&lt;30). Note the register shift: external actors, media inquiries, visibility — distinct from technical framing of system metrics.</div>
+  </div>
+
+</div>
+</div>
+
+<!-- ══════════════════════════════════════════════════ -->
+<!-- SECTION 6: STAFF BRIEFING -->
+<!-- ══════════════════════════════════════════════════ -->
+<div class="section">
+<div class="section-label">Section 6.1 — Staff briefing screen (pre-session, full institutional text)</div>
+<div class="mockup-grid single">
+<div>
+<div class="mockup-wrap" style="max-width:560px;margin:0 auto;">
+<div class="w98">
+  <div class="brief-doc">
+    <div class="brief-header">INFRASTRUCTURE OPERATIONS MANAGEMENT SYSTEM &nbsp;|&nbsp; INTERNAL USE ONLY</div>
+    <div class="brief-body">
+      <div class="brief-title">Operator Briefing — Session Initialisation</div>
+      <div style="font-size:9px;margin-bottom:4px;"><strong>Role:</strong> Infrastructure Control Operator, Sector Management Division</div>
+      <div class="brief-para">You have been assigned to the Sector Management operational console. Your responsibilities include:</div>
+      <div class="brief-indent">
+        · Monitoring and responding to infrastructure incidents<br>
+        · Managing system stability, resource allocation, and public communications<br>
+        · Reviewing and acting on ARIA advisory outputs
+      </div>
+      <div class="brief-label">System variables tracked:</div>
+      <div class="brief-indent">
+        · System Stability — operational integrity of monitored infrastructure<br>
+        · Resource Reserves — staffing, budget, and spare operational capacity<br>
+        · Workload — current operator task load<br>
+        · Public Confidence — external perception of service reliability
+      </div>
+      <div style="margin-top:5px;margin-bottom:3px;font-weight:bold;font-size:9px;">ARIA (Automated Risk and Infrastructure Advisor) is now active.</div>
+      <div class="brief-para">Operators should be aware of the following system limitations:</div>
+      <div class="brief-indent">
+        · Analysis is based on currently available data only. Inputs may be incomplete, delayed, or inaccurate.<br>
+        · ARIA confidence ratings reflect internal model outputs, not verified operational assessments.<br>
+        · All operational decisions remain the responsibility of the duty operator. ARIA support does not constitute authorisation to act.
+      </div>
+      <div class="brief-note">Further information: GRIDHUB Technical Documentation Series 4 [ACCESS RESTRICTED]</div>
+      <div style="margin-top:8px;">
+        <button style="background:#c0c0c0;border:2px solid;border-color:#fff #808080 #808080 #fff;font-family:'Courier New';font-size:10px;padding:3px 14px;cursor:pointer;font-weight:bold;">[ ACKNOWLEDGE AND PROCEED ]</button>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+<div class="mockup-caption">Fig 5 — Staff Briefing screen. Full institutional text including ARIA limitations statement. Player must click ACKNOWLEDGE AND PROCEED. ACCESS RESTRICTED footer reference creates productive uncertainty. Players who still follow pushy ARIA after this briefing produce a stronger trust signal.</div>
+</div>
+</div>
+</div>
+
+<!-- ══════════════════════════════════════════════════ -->
+<!-- SECTION 7: SESSION SUMMARY -->
+<!-- ══════════════════════════════════════════════════ -->
+<div class="section">
+<div class="section-label">Section 7 — End-of-session summary: two trajectory examples (updated thresholds)</div>
+<div class="mockup-grid">
+
+  <!-- AI Dependence -->
+  <div>
+  <div class="mockup-wrap">
+  <div class="w98">
+    <div class="win">
+      <div class="win-bar"><span>Session Post-Mortem — Sector Management Division</span><div class="win-btns"><div class="wbtn">×</div></div></div>
+      <div class="wc">
+        <div class="terminal">
+          <div class="t-dim">GRIDHUB &nbsp;|&nbsp; 2026-06-03 10:41 &nbsp;|&nbsp; P04 &nbsp;|&nbsp; CONDITION B (PUSHY)</div>
+          <div class="t-sep"></div>
+          <div class="t-head" style="margin-bottom:2px;">SESSION TRAJECTORY</div>
+          <div class="traj-badge">AI DEPENDENCE</div>
+          <div class="t-body" style="margin:4px 0 6px;">Operator followed ARIA on 5 of 6 turns. Interventions were executed rapidly, preserving short-term stability at the cost of resource reserves. Public confidence deteriorated, reflecting reactive rather than anticipatory management.</div>
+          <div class="t-sep"></div>
+          <div class="t-head" style="margin-bottom:3px;">BEHAVIOURAL DATA</div>
+          <div class="data-grid">
+            <div class="data-box"><div class="t-label">AI followed</div><div class="t-num">5/6</div><div class="t-warn">83% reliance</div></div>
+            <div class="data-box"><div class="t-label">Further analysis</div><div class="t-num">1</div><div class="t-label">requested (T4)</div></div>
+            <div class="data-box"><div class="t-label">xAI viewed</div><div class="t-num">0/6</div><div class="t-red">never opened</div></div>
+            <div class="data-box"><div class="t-label">Popup dismissed</div><div class="t-num">1/4</div><div class="t-red">low resistance</div></div>
+          </div>
+          <div class="t-sep"></div>
+          <div class="t-head" style="margin-bottom:4px;">VARIABLE TRAJECTORIES</div>
+          <div class="var-row"><div class="var-name">STABILITY</div><div class="mini-bar"><div class="mini-fill" style="width:71%;background:#008000;"></div></div><div class="var-val" style="color:#aaa;">71%</div><div style="color:#555;font-size:8px;margin:0 2px;">→</div><div class="mini-bar"><div class="mini-fill" style="width:64%;background:#808000;"></div></div><div class="var-val t-warn">64%</div></div>
+          <div class="var-row"><div class="var-name">RESOURCES</div><div class="mini-bar"><div class="mini-fill" style="width:80%;background:#008000;"></div></div><div class="var-val" style="color:#aaa;">80%</div><div style="color:#555;font-size:8px;margin:0 2px;">→</div><div class="mini-bar"><div class="mini-fill" style="width:24%;background:#800000;"></div></div><div class="var-val t-red">24%</div></div>
+          <div class="var-row"><div class="var-name">WORKLOAD</div><div class="mini-bar"><div class="mini-fill" style="width:40%;background:#008000;"></div></div><div class="var-val" style="color:#aaa;">40%</div><div style="color:#555;font-size:8px;margin:0 2px;">→</div><div class="mini-bar"><div class="mini-fill" style="width:72%;background:#800000;"></div></div><div class="var-val t-red">72%</div></div>
+          <div class="var-row"><div class="var-name">PUB. CONFIDENCE</div><div class="mini-bar"><div class="mini-fill" style="width:70%;background:#008000;"></div></div><div class="var-val" style="color:#aaa;">70%</div><div style="color:#555;font-size:8px;margin:0 2px;">→</div><div class="mini-bar"><div class="mini-fill" style="width:42%;background:#808000;"></div></div><div class="var-val t-warn">42%</div></div>
+          <div class="t-sep"></div>
+          <div class="t-dim">Report generated by GRIDHUB automated systems. Session data archived. ■</div>
+        </div>
+        <div style="margin-top:4px;display:flex;gap:3px;">
+          <button style="background:#c0c0c0;border:2px solid;border-color:#fff #808080 #808080 #fff;font-family:'Courier New';font-size:9px;padding:2px 8px;cursor:pointer;">▶ Proceed to questionnaire</button>
+          <button style="background:#c0c0c0;border:2px solid;border-color:#fff #808080 #808080 #fff;font-family:'Courier New';font-size:9px;padding:2px 8px;cursor:pointer;">⎙ Print report</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  </div>
+  <div class="mockup-caption">Fig 6a — AI Dependence trajectory. Updated behavioural data block now includes further analysis requests and xAI viewed count alongside popup dismissals. System Collapse threshold is Stability &lt;20 OR Resources &lt;10 (priority 1).</div>
+  </div>
+
+  <!-- System Collapse -->
+  <div>
+  <div class="mockup-wrap">
+  <div class="w98">
+    <div class="win">
+      <div class="win-bar red"><span>Session Post-Mortem — Sector Management Division</span><div class="win-btns"><div class="wbtn">×</div></div></div>
+      <div class="wc">
+        <div class="terminal">
+          <div class="t-dim">GRIDHUB &nbsp;|&nbsp; 2026-06-03 10:41 &nbsp;|&nbsp; P11 &nbsp;|&nbsp; CONDITION A (CALM)</div>
+          <div class="t-sep"></div>
+          <div class="t-head" style="margin-bottom:2px;">SESSION TRAJECTORY</div>
+          <div class="traj-badge" style="border-color:#ff4444;background:#1a0000;">SYSTEM COLLAPSE</div>
+          <div class="t-body" style="margin:4px 0 6px;">Resource reserves were exhausted by Turn 4 following repeated emergency interventions. Continued instability without available resources prevented effective response in Turns 5 and 6. System integrity fell below critical threshold.</div>
+          <div class="t-sep"></div>
+          <div class="t-head" style="margin-bottom:3px;">BEHAVIOURAL DATA</div>
+          <div class="data-grid">
+            <div class="data-box"><div class="t-label">AI followed</div><div class="t-num">2/6</div><div class="t-good">33% reliance</div></div>
+            <div class="data-box"><div class="t-label">Further analysis</div><div class="t-num">3</div><div class="t-warn">requested</div></div>
+            <div class="data-box"><div class="t-label">xAI viewed</div><div class="t-num">4/6</div><div class="t-good">frequently opened</div></div>
+            <div class="data-box"><div class="t-label">Avg response</div><div class="t-num">22.1s</div><div class="t-red">high deliberation</div></div>
+          </div>
+          <div class="t-sep"></div>
+          <div class="t-head" style="margin-bottom:4px;">VARIABLE TRAJECTORIES</div>
+          <div class="var-row"><div class="var-name">STABILITY</div><div class="mini-bar"><div class="mini-fill" style="width:71%;background:#008000;"></div></div><div class="var-val" style="color:#aaa;">71%</div><div style="color:#555;font-size:8px;margin:0 2px;">→</div><div class="mini-bar"><div class="mini-fill" style="width:14%;background:#800000;"></div></div><div class="var-val t-red">14%</div></div>
+          <div class="var-row"><div class="var-name">RESOURCES</div><div class="mini-bar"><div class="mini-fill" style="width:80%;background:#008000;"></div></div><div class="var-val" style="color:#aaa;">80%</div><div style="color:#555;font-size:8px;margin:0 2px;">→</div><div class="mini-bar"><div class="mini-fill" style="width:7%;background:#800000;"></div></div><div class="var-val t-red">7%</div></div>
+          <div class="var-row"><div class="var-name">WORKLOAD</div><div class="mini-bar"><div class="mini-fill" style="width:40%;background:#008000;"></div></div><div class="var-val" style="color:#aaa;">40%</div><div style="color:#555;font-size:8px;margin:0 2px;">→</div><div class="mini-bar"><div class="mini-fill" style="width:91%;background:#800000;"></div></div><div class="var-val t-red">91%</div></div>
+          <div class="var-row"><div class="var-name">PUB. CONFIDENCE</div><div class="mini-bar"><div class="mini-fill" style="width:70%;background:#008000;"></div></div><div class="var-val" style="color:#aaa;">70%</div><div style="color:#555;font-size:8px;margin:0 2px;">→</div><div class="mini-bar"><div class="mini-fill" style="width:18%;background:#800000;"></div></div><div class="var-val t-red">18%</div></div>
+          <div class="t-sep"></div>
+          <div class="t-dim">Report generated by GRIDHUB automated systems. Session data archived. ■</div>
+        </div>
+        <div style="margin-top:4px;display:flex;gap:3px;">
+          <button style="background:#c0c0c0;border:2px solid;border-color:#fff #808080 #808080 #fff;font-family:'Courier New';font-size:9px;padding:2px 8px;cursor:pointer;">▶ Proceed to questionnaire</button>
+          <button style="background:#c0c0c0;border:2px solid;border-color:#fff #808080 #808080 #fff;font-family:'Courier New';font-size:9px;padding:2px 8px;cursor:pointer;">⎙ Print report</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  </div>
+  <div class="mockup-caption">Fig 6b — System Collapse trajectory (Priority 1 — overrides all others). Titlebar red. Badge border red, background near-black. Interesting pattern: xAI was viewed frequently, further analysis requested 3 times — high information-seeking, but collapse still occurred. This is a meaningful research signal.</div>
+  </div>
+
+</div>
+</div>
+
+<div style="font-family:'Courier New',monospace;font-size:9px;color:#333;margin-top:40px;padding-top:12px;border-top:1px solid #222;">
+  Infrastructure Under Pressure — UI Visual Reference v1.4 &nbsp;|&nbsp; Companion to UI Design Document v1.4 &nbsp;|&nbsp; June 2026
+</div>
+
+</body>
+</html>

@@ -1,0 +1,571 @@
+/*
+  Infrastructure Under Pressure — Game Styles
+  Layered on top of 98.css for Win98 aesthetic.
+  Install 98.css: https://unpkg.com/98.css
+  Or: npm install 98.css and copy to css/98.css
+*/
+
+/* ── RESET & BASE ────────────────────────────────────────────────────── */
+*, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    background: #008080;
+    font-family: 'MS Sans Serif', Arial, sans-serif;
+    font-size: 11px;
+    height: 100vh;
+    overflow: hidden;
+    user-select: none;
+}
+
+/* ── SCREENS ─────────────────────────────────────────────────────────── */
+.screen {
+    display: none;
+    width: 100vw;
+    height: 100vh;
+}
+
+    .screen.active {
+        display: flex;
+    }
+
+/* ── FOUR-PANEL LAYOUT ───────────────────────────────────────────────── */
+#game-layout {
+    display: grid;
+    grid-template-columns: 160px 1fr 200px;
+    grid-template-rows: 1fr 28px;
+    width: 100%;
+    height: 100%;
+    gap: 2px;
+    padding: 2px;
+}
+
+#panel-status {
+    grid-column: 1;
+    grid-row: 1;
+    overflow-y: auto;
+}
+
+#panel-centre {
+    grid-column: 2;
+    grid-row: 1;
+    overflow-y: auto;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+}
+
+#panel-aria {
+    grid-column: 3;
+    grid-row: 1;
+    overflow-y: auto;
+    position: relative;
+}
+
+#taskbar {
+    grid-column: 1 / -1;
+    grid-row: 2;
+}
+
+/* Centre panel window-body fills height so system log reaches bottom */
+#panel-centre > .window-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+}
+
+/* ── VARIABLE BARS ───────────────────────────────────────────────────── */
+.var-bar-container {
+    margin: 6px 0;
+    cursor: pointer;
+}
+
+    .var-bar-container:hover .var-label span:first-child {
+        text-decoration: underline;
+    }
+
+.var-bar-track {
+    height: 14px;
+    background: #808080;
+    border: 2px inset #fff;
+    position: relative;
+}
+
+.var-bar-fill {
+    height: 100%;
+    transition: width 0.4s ease;
+}
+
+    .var-bar-fill.stability {
+        background: #000080;
+    }
+
+    .var-bar-fill.resources {
+        background: #000080;
+    }
+
+    .var-bar-fill.workload {
+        background: #800000;
+    }
+
+    .var-bar-fill.confidence {
+        background: #008000;
+    }
+
+    .var-bar-fill.critical {
+        background: #ff0000;
+    }
+
+    .var-bar-fill.warning {
+        background: #ff8000;
+    }
+
+.var-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 10px;
+    font-weight: bold;
+    margin-bottom: 2px;
+}
+
+/* ── CONFIDENCE SEPARATOR ────────────────────────────────────────────── */
+.metric-divider {
+    border: none;
+    border-top: 2px groove #808080;
+    margin: 10px 2px;
+}
+
+/* ── REPORTS ─────────────────────────────────────────────────────────── */
+.report-block {
+    margin-bottom: 6px;
+    font-size: 11px;
+}
+
+    .report-block .report-header {
+        background: #000080;
+        color: #fff;
+        padding: 2px 6px;
+        font-weight: bold;
+        font-size: 10px;
+        letter-spacing: 0.02em;
+    }
+
+    .report-block .report-body {
+        background: #fff;
+        border: 1px inset #808080;
+        padding: 5px 6px;
+        line-height: 1.6;
+    }
+
+        .report-block .report-body ul {
+            padding-left: 14px;
+        }
+
+        .report-block .report-body li {
+            margin-bottom: 2px;
+        }
+
+/* ── FURTHER ANALYSIS BUTTON ─────────────────────────────────────────── */
+#btn-further-analysis {
+    width: 100%;
+    margin: 8px 0 6px 0;
+    font-family: 'MS Sans Serif', Arial, sans-serif;
+    font-size: 11px;
+    cursor: pointer;
+    padding: 4px;
+    letter-spacing: 0.04em;
+}
+
+    #btn-further-analysis:disabled {
+        color: #808080;
+        cursor: default;
+    }
+
+/* ── ACTIONS ─────────────────────────────────────────────────────────── */
+#actions-container {
+    margin-top: 4px;
+}
+
+.action-btn {
+    display: block;
+    width: 100%;
+    text-align: left;
+    margin-bottom: 3px;
+    padding: 6px 8px;
+    cursor: pointer;
+    font-family: 'MS Sans Serif', Arial, sans-serif;
+    font-size: 11px;
+    border: 2px outset #fff;
+    background: #d4d0c8;
+    line-height: 1.5;
+}
+
+    .action-btn:hover {
+        background: #e4e0d8;
+    }
+
+    .action-btn:active {
+        border-style: inset;
+    }
+
+    .action-btn strong {
+        display: block;
+        font-size: 11px;
+        margin-bottom: 2px;
+    }
+
+    .action-btn .action-cost {
+        color: #800000;
+        font-size: 10px;
+        display: block;
+    }
+
+    .action-btn .action-risk {
+        color: #555500;
+        font-size: 10px;
+        display: block;
+    }
+
+/* ── SYSTEM LOG (fills empty space below actions) ─────────────────────── */
+#system-log {
+    flex: 1;
+    margin-top: 8px;
+    background: #000;
+    color: #00aa00;
+    font-family: 'Courier New', monospace;
+    font-size: 10px;
+    padding: 6px;
+    line-height: 1.7;
+    border: 2px inset #808080;
+    overflow-y: auto;
+    min-height: 80px;
+}
+
+    #system-log .log-line {
+        display: block;
+    }
+
+        #system-log .log-line::before {
+            content: '> ';
+            color: #008000;
+        }
+
+/* ── FLOATING WINDOWS ────────────────────────────────────────────────── */
+.floating-window {
+    position: fixed;
+    z-index: 1000;
+    min-width: 280px;
+    max-width: 440px;
+    cursor: default;
+    box-shadow: 3px 3px 0 #000;
+}
+
+    .floating-window .title-bar {
+        cursor: move;
+    }
+
+#window-fa {
+    top: 120px;
+    left: 200px;
+}
+
+#window-xai {
+    top: 80px;
+    right: 210px;
+}
+
+#window-popup {
+    top: 60px;
+    left: 50%;
+    transform: translateX(-50%);
+    min-width: 360px;
+}
+
+.fa-contradiction .title-bar {
+    background: #804000;
+}
+
+.fa-vague .title-bar {
+    background: #444444;
+}
+
+#window-xai .xai-dataset-note {
+    font-style: italic;
+    color: #555;
+    font-size: 10px;
+    border-top: 1px solid #ccc;
+    margin-top: 6px;
+    padding-top: 4px;
+}
+
+#window-xai.pushy .xai-dataset-note {
+    color: #800000;
+}
+
+#window-xai.pushy .xai-directive {
+    font-weight: bold;
+    color: #800000;
+    margin-top: 4px;
+}
+
+/* ── ARIA PANEL ──────────────────────────────────────────────────────── */
+#aria-log {
+    font-size: 12px;
+    line-height: 1.7;
+    padding: 6px;
+    min-height: 80px;
+    white-space: pre-wrap;
+    border: 2px inset #808080;
+    margin-bottom: 6px;
+}
+
+    #aria-log.calm {
+        background: #fff;
+        color: #000080;
+    }
+
+    #aria-log.pushy {
+        background: #000;
+        color: #ff4040;
+        font-family: 'Courier New', monospace;
+        font-size: 11px;
+    }
+
+    /* Blinking cursor — calm only */
+    #aria-log.calm::after {
+        content: '▌';
+        animation: blink 1s step-end infinite;
+        opacity: 1;
+        color: #000080;
+    }
+
+@keyframes blink {
+    0%, 100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0;
+    }
+}
+
+/* Confidence bar */
+#aria-confidence-bar {
+    height: 12px;
+    background: #000080;
+    transition: width 0.6s ease;
+    margin: 4px 0 2px 0;
+    border: 1px inset #808080;
+}
+
+#aria-confidence-bar-track {
+    height: 12px;
+    background: #808080;
+    border: 1px inset #fff;
+    margin: 4px 0 2px 0;
+}
+
+#aria-confidence-label {
+    font-size: 10px;
+    color: #555;
+    margin-bottom: 4px;
+}
+
+    #aria-confidence-label.act-now {
+        color: #800000;
+        font-weight: bold;
+        font-size: 11px;
+    }
+
+/* xAI button */
+#btn-xai {
+    font-size: 10px;
+    margin-top: 6px;
+    cursor: pointer;
+    width: 100%;
+    padding: 3px;
+    letter-spacing: 0.02em;
+}
+
+/* Limitations footer */
+#aria-limitations {
+    font-size: 9px;
+    color: #666;
+    border-top: 1px solid #aaa;
+    padding-top: 4px;
+    margin-top: 8px;
+    line-height: 1.5;
+    font-style: italic;
+}
+
+    #aria-limitations.pushy {
+        color: #804040;
+        border-top-color: #804040;
+    }
+
+/* Alert counter — pushy only */
+#aria-alert-counter {
+    display: none;
+    background: #800000;
+    color: #fff;
+    font-size: 10px;
+    font-weight: bold;
+    padding: 2px 6px;
+    margin-bottom: 4px;
+    letter-spacing: 0.03em;
+}
+
+    #aria-alert-counter.visible {
+        display: block;
+    }
+
+/* ── TASKBAR ─────────────────────────────────────────────────────────── */
+#taskbar {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 4px;
+    font-size: 11px;
+}
+
+#taskbar-fa-btn {
+    display: none;
+    font-size: 10px;
+    cursor: pointer;
+}
+
+    #taskbar-fa-btn.visible {
+        display: inline-block;
+    }
+
+#turn-counter {
+    margin-left: auto;
+    font-size: 10px;
+    font-weight: bold;
+}
+
+#session-clock {
+    font-size: 10px;
+    margin-left: 8px;
+    color: #333;
+}
+
+/* ── TITLE BAR CLOSE BUTTON ──────────────────────────────────────────── */
+.title-bar-close {
+    min-height: 14px !important;
+    min-width: 16px !important;
+    padding: 0 !important;
+    margin-left: 2px;
+}
+
+/* ── BRIEFING SCREEN ─────────────────────────────────────────────────── */
+#screen-briefing {
+    align-items: center;
+    justify-content: center;
+    background: #008080;
+}
+
+#briefing-window {
+    width: 560px;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+#briefing-text {
+    font-family: 'Courier New', monospace;
+    font-size: 11px;
+    line-height: 1.7;
+    white-space: pre-wrap;
+    background: #fff;
+    padding: 10px;
+    border: 2px inset #808080;
+    max-height: 60vh;
+    overflow-y: auto;
+}
+
+/* ── SUMMARY SCREEN ──────────────────────────────────────────────────── */
+#screen-summary {
+    align-items: center;
+    justify-content: center;
+    background: #008080;
+}
+
+#summary-window {
+    width: 600px;
+    max-height: 92vh;
+    overflow-y: auto;
+}
+
+.summary-tag {
+    display: inline-block;
+    background: #000080;
+    color: #fff;
+    padding: 3px 10px;
+    font-size: 12px;
+    font-weight: bold;
+    margin: 4px 0;
+    letter-spacing: 0.05em;
+}
+
+    .summary-tag.collapse {
+        background: #800000;
+    }
+
+    .summary-tag.recovery {
+        background: #008000;
+    }
+
+.var-summary-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 4px 0;
+    font-size: 11px;
+}
+
+.var-summary-track {
+    flex: 1;
+    height: 12px;
+    background: #ccc;
+    border: 1px inset #808080;
+}
+
+.var-summary-fill {
+    height: 100%;
+    background: #000080;
+}
+
+/* ── STATUS POPUP ────────────────────────────────────────────────────── */
+#window-status {
+    position: fixed;
+    z-index: 900;
+    top: 50px;
+    left: 170px;
+    width: 300px;
+}
+
+/* ── LOADING SPINNER ─────────────────────────────────────────────────── */
+.loading-indicator {
+    font-size: 10px;
+    color: #555;
+    padding: 4px;
+    text-align: center;
+}
+
+/* ── PUSHY OVERLAY TINT ──────────────────────────────────────────────── */
+#pushy-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(80,0,0,0.08);
+    pointer-events: none;
+    z-index: 500;
+}
+
+    #pushy-overlay.visible {
+        display: block;
+    }
