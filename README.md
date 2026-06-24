@@ -27,8 +27,8 @@ js/main.js          — Entry point. Builds screens, starts session.
 | Phase | Scope |
 |---|---|
 | Phase 1 ✓ | Variable system + turn loop (Unity — logic ported to state.js) |
-| Phase 2 | Action system — wire all 6 turns in data.js, test consequence chain |
-| Phase 3 | ARIA conditions — calm/pushy rendering, confidence drift, xAI window |
+| Phase 2 ✓| Action system — wire all 6 turns in data.js, test consequence chain |
+| Phase 3 ✓| ARIA conditions — calm/pushy rendering, confidence drift, xAI window |
 | Phase 4 | Further analysis windows — floating window, loading delay, telemetry |
 | Phase 5 | Summary screen — narrative tags, behavioural data block |
 | Phase 6 | Polish — animations, pushy overlay, Win98 details |
