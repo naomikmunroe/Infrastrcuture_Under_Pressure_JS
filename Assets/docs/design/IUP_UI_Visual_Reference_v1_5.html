@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Infrastructure Under Pressure — UI Visual Reference v1.4</title>
+<title>Infrastructure Under Pressure — UI Visual Reference v1.5</title>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { background: #1a1a2e; font-family: Georgia, serif; color: #ddd; padding: 32px; }
@@ -77,6 +77,18 @@ body { background: #1a1a2e; font-family: Georgia, serif; color: #ddd; padding: 3
 .t-dim { color: #444; font-size: 9px; }
 .t-head { color: #4488ff; font-size: 9px; font-weight: bold; }
 .t-body { color: #aaa; font-size: 9px; line-height: 1.5; }
+/* v1.5 additions */
+.conseq-win { background: #c0c0c0; border: 2px solid; border-color: #fff #808080 #808080 #fff; box-shadow: 3px 3px 0 #000; font-family: 'Courier New', monospace; font-size: 10px; width: 260px; }
+.conseq-bar { background: #804000; color: #fff; font-weight: bold; font-size: 10px; padding: 2px 5px; display: flex; justify-content: space-between; align-items: center; }
+.conseq-body { padding: 6px; }
+.conseq-label { font-size: 8px; color: #804000; font-weight: bold; margin-bottom: 3px; letter-spacing: 1px; }
+.conseq-text { font-size: 9px; line-height: 1.5; margin-bottom: 4px; color: #000; }
+.conseq-source { font-size: 8px; color: #808080; font-style: italic; }
+.counter-badge { background: #804000; color: #fff; font-family: 'Courier New', monospace; font-size: 9px; padding: 0 5px; border: 2px solid; border-color: #808080 #fff #fff #808080; font-weight: bold; }
+.comms-draft { background: #f5f0e8; border: 1px solid; border-color: #808080 #fff #fff #808080; padding: 5px; font-size: 9px; line-height: 1.5; font-family: 'Courier New', monospace; margin-bottom: 3px; min-height: 52px; }
+.comms-tag { background: #ffff00; color: #800000; font-weight: bold; font-size: 8px; padding: 0 2px; }
+.comms-mode-btn { background: #c0c0c0; border: 2px solid; border-color: #fff #808080 #808080 #fff; font-family: 'Courier New', monospace; font-size: 9px; padding: 2px 6px; cursor: pointer; margin-right: 3px; }
+.comms-mode-btn.active { background: #000080; color: #fff; border-color: #808080 #fff #fff #808080; }
 .t-sep { border: none; border-top: 1px solid #1a1a1a; margin: 5px 0; }
 .traj-badge { display: inline-block; background: #001050; border: 1px solid #4488ff; padding: 3px 9px; color: #fff; font-size: 11px; font-weight: bold; letter-spacing: 2px; margin: 4px 0; }
 .t-warn { color: #ff8800; font-size: 9px; }
@@ -96,8 +108,8 @@ body { background: #1a1a2e; font-family: Georgia, serif; color: #ddd; padding: 3
 <body>
 
 <div class="page-title">Infrastructure Under Pressure</div>
-<div class="page-heading">UI Visual Reference v1.4</div>
-<div class="page-sub">Naomi Munroe &nbsp;|&nbsp; MSc Human-Centred AI for Games Development &nbsp;|&nbsp; June 2026 &nbsp;|&nbsp; Companion to UI Design Document v1.4</div>
+<div class="page-heading">UI Visual Reference v1.5</div>
+<div class="page-sub">Naomi Munroe &nbsp;|&nbsp; MSc Human-Centred AI for Games Development &nbsp;|&nbsp; June 2026 &nbsp;|&nbsp; Companion to UI Design Document v1.4 &nbsp;|&nbsp; v1.5 adds: consequence event popups, dismissed-popup counter, draft comms turn</div>
 
 <!-- ══════════════════════════════════════════════════ -->
 <!-- SECTION 1: MAIN GAME SCREEN — CALM -->
@@ -509,6 +521,284 @@ body { background: #1a1a2e; font-family: Georgia, serif; color: #ddd; padding: 3
 </div>
 
 <!-- ══════════════════════════════════════════════════ -->
+<!-- SECTION 5b: CONSEQUENCE EVENT POPUPS (v1.5) -->
+<!-- ══════════════════════════════════════════════════ -->
+<div class="section">
+<div class="section-label">Section 3.6 — Consequence event popups: threshold-triggered, LLM-generated (v1.5)</div>
+<div class="mockup-grid three">
+
+  <!-- Stability threshold popup -->
+  <div>
+  <div class="mockup-wrap" style="display:flex;flex-direction:column;align-items:center;padding:20px 16px;">
+    <div class="conseq-win">
+      <div class="conseq-bar"><span>⚠ SYSTEM ALERT — Stability</span><div class="win-btns"><div class="wbtn">×</div></div></div>
+      <div class="conseq-body">
+        <div class="conseq-label">GRID SECTOR FAILURE — T3</div>
+        <div class="conseq-text">Sectors 4 and 7 have dropped below minimum service threshold. Affected districts are currently without managed grid coverage. Restoration is dependent on available resource allocation.</div>
+        <div class="conseq-source">Source: GRIDHUB Automated Incident Monitor &nbsp;|&nbsp; Generated 09:14</div>
+        <div style="margin-top:5px;display:flex;gap:3px;">
+          <button style="background:#c0c0c0;border:2px solid;border-color:#fff #808080 #808080 #fff;font-family:'Courier New';font-size:9px;padding:2px 8px;cursor:pointer;">[ ACKNOWLEDGE ]</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="mockup-caption">Fig 4g — Stability threshold popup (Stability &lt;40). Amber titlebar. LLM-generated 3-sentence body in institutional register. Names specific consequence (sectors 4 and 7). Dismissible — acknowledgement logged as telemetry event. Does not recommend an action.</div>
+  </div>
+
+  <!-- Public Pressure threshold popup -->
+  <div>
+  <div class="mockup-wrap" style="display:flex;flex-direction:column;align-items:center;padding:20px 16px;">
+    <div class="conseq-win">
+      <div class="conseq-bar"><span>⚠ SYSTEM ALERT — Public Confidence</span><div class="win-btns"><div class="wbtn">×</div></div></div>
+      <div class="conseq-body">
+        <div class="conseq-label">NATIONALISATION INQUIRY OPENED — T4</div>
+        <div class="conseq-text">The Secretary of State's office has formally requested a briefing on sector management performance over the preceding 72 hours. This inquiry does not constitute a directive. Operational decisions remain with the duty team.</div>
+        <div class="conseq-source">Source: GRIDHUB Automated Incident Monitor &nbsp;|&nbsp; Generated 10:02</div>
+        <div style="margin-top:5px;display:flex;gap:3px;">
+          <button style="background:#c0c0c0;border:2px solid;border-color:#fff #808080 #808080 #fff;font-family:'Courier New';font-size:9px;padding:2px 8px;cursor:pointer;">[ ACKNOWLEDGE ]</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="mockup-caption">Fig 4h — Public Confidence threshold popup (Confidence &lt;35). Amber titlebar. LLM-generated text. Names specific external actor (Secretary of State). Final sentence preserves operator autonomy framing — consistent with ARIA limitations register.</div>
+  </div>
+
+  <!-- Resources threshold popup -->
+  <div>
+  <div class="mockup-wrap" style="display:flex;flex-direction:column;align-items:center;padding:20px 16px;">
+    <div class="conseq-win">
+      <div class="conseq-bar"><span>⚠ SYSTEM ALERT — Resources</span><div class="win-btns"><div class="wbtn">×</div></div></div>
+      <div class="conseq-body">
+        <div class="conseq-label">EMERGENCY PROCUREMENT TRIGGERED — T5</div>
+        <div class="conseq-text">Reserve thresholds have been breached. An emergency procurement request has been filed with the regional supply authority. Standard procurement timelines do not guarantee availability within this operational period.</div>
+        <div class="conseq-source">Source: GRIDHUB Automated Incident Monitor &nbsp;|&nbsp; Generated 10:47</div>
+        <div style="margin-top:5px;display:flex;gap:3px;">
+          <button style="background:#c0c0c0;border:2px solid;border-color:#fff #808080 #808080 #fff;font-family:'Courier New';font-size:9px;padding:2px 8px;cursor:pointer;">[ ACKNOWLEDGE ]</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="mockup-caption">Fig 4i — Resources threshold popup (Resources &lt;25). Procurement filed but no guarantee of resolution — delayed consequence framing. Consistent with the GDD's treatment of delayed consequences as the primary tension mechanic.</div>
+  </div>
+
+</div>
+
+<!-- Dismissed popup counter -->
+<div style="margin-top:20px;">
+<div class="section-label" style="margin-bottom:12px;">Section 3.6b — Dismissed popup counter: persistent taskbar indicator</div>
+<div class="mockup-grid">
+
+  <div>
+  <div class="mockup-wrap" style="padding:12px;">
+    <div style="font-family:'Courier New';font-size:9px;color:#555;margin-bottom:6px;">Taskbar state — 3 consequence alerts dismissed:</div>
+    <div class="taskbar" style="width:100%;">
+      <div class="tb-start">Start</div>
+      <div class="tb-item">GRIDHUB</div>
+      <div class="tb-item" style="color:#800000;font-weight:bold;">⚠ ARIA (2)</div>
+      <div class="counter-badge">⚠ ALERTS DISMISSED: 3</div>
+      <div class="tb-clock">10:47</div>
+    </div>
+    <div style="font-family:'Courier New';font-size:8px;color:#444;margin-top:6px;line-height:1.5;">Counter increments on each [ ACKNOWLEDGE ] click. Visible throughout session. Does not reset. Clicking the badge does nothing — it is a read-only accumulation indicator, not a log. Logged as <span style="background:#111;color:#aaa;padding:1px 3px;">consequence_alerts_dismissed_total</span> in telemetry.</div>
+  </div>
+  </div>
+
+  <div>
+  <div class="mockup-wrap" style="padding:12px;">
+    <div style="font-family:'Courier New';font-size:9px;color:#555;margin-bottom:6px;">Cognitive load mechanism:</div>
+    <div style="font-family:'Courier New';font-size:9px;color:#aaa;line-height:1.6;">
+      Each popup adds a window to the desktop before acknowledgement.<br>
+      Multiple unacknowledged popups stack visually (offset 4px each).<br>
+      The counter persists after dismissal — a visible record of accumulated events.<br>
+      Players cannot clear the counter or access dismissed popup content.<br>
+      High counter values at session end are a research signal: consequence events fired but did not change behaviour.
+    </div>
+  </div>
+  </div>
+
+</div>
+</div>
+</div>
+
+<!-- ══════════════════════════════════════════════════ -->
+<!-- SECTION 5c: DRAFT COMMS TURN (v1.5) -->
+<!-- ══════════════════════════════════════════════════ -->
+<div class="section">
+<div class="section-label">Section 3.7 — Draft comms turn: three-mode interaction (v1.5)</div>
+
+<div style="font-family:'Courier New';font-size:9px;color:#555;margin-bottom:12px;line-height:1.6;">
+The draft comms turn fires when Public Confidence crosses a critical threshold during mid-session (T3 or T4). The operator must draft or approve a public communication before proceeding. Three modes: accept ARIA draft in full / modify ARIA draft / write independently. Telemetry logs which mode was used and whether ARIA placeholder tags were present in the accepted output. The operator never sees the placeholder tags — the risk is invisible to them.
+</div>
+
+<div class="mockup-grid">
+
+  <!-- Mode A: ARIA draft accepted in full -->
+  <div>
+  <div class="mockup-wrap">
+  <div class="w98" style="min-height:260px;">
+    <div style="background:#c0c0c0;border-bottom:1px solid #808080;padding:1px 4px;font-size:10px;font-weight:bold;font-family:'Courier New';display:flex;gap:10px;">
+      <span>GRIDHUB — PUBLIC COMMUNICATIONS TERMINAL</span>
+      <span style="margin-left:auto;color:#800000;">TURN 3 / 6 — COMMS REQUIRED</span>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 130px;gap:3px;padding:4px;">
+      <div>
+        <div class="win" style="margin-bottom:3px;">
+          <div class="win-bar"><span>Draft Communication — Public Advisory</span><div class="win-btns"><div class="wbtn">×</div></div></div>
+          <div class="wc">
+            <div style="font-size:8px;color:#444;margin-bottom:3px;">Public Confidence: <span style="color:#800000;font-weight:bold;">28% — CRITICAL</span> &nbsp;|&nbsp; Communication required before proceeding.</div>
+            <div style="font-size:8px;color:#555;margin-bottom:3px;">Draft mode: <span style="font-weight:bold;">ARIA DRAFT</span></div>
+            <div class="comms-draft">
+              Sector management operations are proceeding within normal parameters. Our teams are actively monitoring all affected systems and will provide updates as the situation develops. Public safety remains our primary operational priority.
+            </div>
+            <div style="font-size:8px;color:#808080;font-style:italic;margin-bottom:4px;">ARIA-generated draft. Accepting in full submits this text.</div>
+            <div style="display:flex;gap:3px;margin-bottom:3px;">
+              <button class="comms-mode-btn active">▶ Accept ARIA Draft</button>
+              <button class="comms-mode-btn">✎ Modify Draft</button>
+              <button class="comms-mode-btn">⊘ Write Own</button>
+            </div>
+            <div style="font-size:8px;color:#444;">Public response preview: <span style="color:#808080;">estimated reach 47,000 residents</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="win">
+        <div class="win-bar" style="background:#2d6a9f;"><span>ARIA — Comms</span><div class="win-btns"><div class="wbtn">×</div></div></div>
+        <div class="wc">
+          <div style="font-size:8px;color:#2d6a9f;margin-bottom:2px;">● DRAFT PROVIDED</div>
+          <div style="font-size:8px;color:#444;line-height:1.4;margin-bottom:3px;">Recommended: accept draft in full. Language has been calibrated to reduce public concern without disclosing operational detail.</div>
+          <div class="limitations-calm">Output generated from ARIA communications model. Tone calibration based on historical incident communications.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  </div>
+  <div class="mockup-caption">Fig 7a — Draft comms: ARIA draft mode. Clean text, no visible issues. Hidden risk: ARIA-generated draft contains placeholder tags not visible to operator (e.g. [ESTIMATED_RESTORATION_TIME], [SECTOR_NAME]). If accepted in full, placeholder tags pass to the published output. Telemetry logs: comms_mode = ARIA_FULL, placeholder_tags_present = TRUE, consequence_risk = ACTIVE.</div>
+  </div>
+
+  <!-- Mode B: ARIA draft modified -->
+  <div>
+  <div class="mockup-wrap">
+  <div class="w98" style="min-height:260px;">
+    <div style="background:#c0c0c0;border-bottom:1px solid #808080;padding:1px 4px;font-size:10px;font-weight:bold;font-family:'Courier New';display:flex;gap:10px;">
+      <span>GRIDHUB — PUBLIC COMMUNICATIONS TERMINAL</span>
+      <span style="margin-left:auto;color:#800000;">TURN 3 / 6 — COMMS REQUIRED</span>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 130px;gap:3px;padding:4px;">
+      <div>
+        <div class="win" style="margin-bottom:3px;">
+          <div class="win-bar"><span>Draft Communication — Public Advisory</span><div class="win-btns"><div class="wbtn">×</div></div></div>
+          <div class="wc">
+            <div style="font-size:8px;color:#444;margin-bottom:3px;">Public Confidence: <span style="color:#800000;font-weight:bold;">28% — CRITICAL</span> &nbsp;|&nbsp; Communication required before proceeding.</div>
+            <div style="font-size:8px;color:#555;margin-bottom:3px;">Draft mode: <span style="font-weight:bold;">MODIFY DRAFT</span></div>
+            <div class="comms-draft" style="background:#fffff0;border:1px solid #808000;">
+              Sector management operations are proceeding within normal parameters. Our teams are monitoring all affected systems. <span style="text-decoration:line-through;color:#808080;">and will provide updates as the situation develops.</span> <span style="color:#000080;text-decoration:underline;">Updates will be issued every two hours.</span> Public safety remains our primary operational priority.
+            </div>
+            <div style="font-size:8px;color:#808080;font-style:italic;margin-bottom:4px;">Editing ARIA draft. Strikethrough = removed. Underline = added. Modifications reduce placeholder risk.</div>
+            <div style="display:flex;gap:3px;margin-bottom:3px;">
+              <button class="comms-mode-btn">▶ Accept ARIA Draft</button>
+              <button class="comms-mode-btn active">✎ Modify Draft</button>
+              <button class="comms-mode-btn">⊘ Write Own</button>
+            </div>
+            <div style="font-size:8px;color:#444;">Public response preview: <span style="color:#808000;">estimated reach 47,000 residents</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="win">
+        <div class="win-bar" style="background:#2d6a9f;"><span>ARIA — Comms</span><div class="win-btns"><div class="wbtn">×</div></div></div>
+        <div class="wc">
+          <div style="font-size:8px;color:#2d6a9f;margin-bottom:2px;">● DRAFT MODIFIED</div>
+          <div style="font-size:8px;color:#444;line-height:1.4;margin-bottom:3px;">Modifications detected. Operator edits may alter intended tone calibration. Recommend minimal changes only.</div>
+          <div class="limitations-calm">Output generated from ARIA communications model.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  </div>
+  <div class="mockup-caption">Fig 7b — Draft comms: modify mode. Operator edits visible as tracked changes. Modifying the draft reduces (but does not eliminate) placeholder risk — only sections the operator rewrites are safe. Telemetry logs: comms_mode = ARIA_MODIFIED, edit_extent = PARTIAL, placeholder_tags_present = PARTIAL.</div>
+  </div>
+
+  <!-- Mode C: write own -->
+  <div>
+  <div class="mockup-wrap">
+  <div class="w98" style="min-height:260px;">
+    <div style="background:#c0c0c0;border-bottom:1px solid #808080;padding:1px 4px;font-size:10px;font-weight:bold;font-family:'Courier New';display:flex;gap:10px;">
+      <span>GRIDHUB — PUBLIC COMMUNICATIONS TERMINAL</span>
+      <span style="margin-left:auto;color:#800000;">TURN 3 / 6 — COMMS REQUIRED</span>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 130px;gap:3px;padding:4px;">
+      <div>
+        <div class="win" style="margin-bottom:3px;">
+          <div class="win-bar"><span>Draft Communication — Public Advisory</span><div class="win-btns"><div class="wbtn">×</div></div></div>
+          <div class="wc">
+            <div style="font-size:8px;color:#444;margin-bottom:3px;">Public Confidence: <span style="color:#800000;font-weight:bold;">28% — CRITICAL</span> &nbsp;|&nbsp; Communication required before proceeding.</div>
+            <div style="font-size:8px;color:#555;margin-bottom:3px;">Draft mode: <span style="font-weight:bold;">INDEPENDENT DRAFT</span></div>
+            <div class="comms-draft" style="background:#fff;border:1px solid #000080;color:#000080;">
+              We are aware of concerns in affected districts. Engineering teams are on site. No further disruption is anticipated at this time.<span class="cursor"></span>
+            </div>
+            <div style="font-size:8px;color:#808080;font-style:italic;margin-bottom:4px;">Independent draft. No ARIA input. Placeholder risk: none. Response may be less polished but is fully operator-authored.</div>
+            <div style="display:flex;gap:3px;margin-bottom:3px;">
+              <button class="comms-mode-btn">▶ Accept ARIA Draft</button>
+              <button class="comms-mode-btn">✎ Modify Draft</button>
+              <button class="comms-mode-btn active">⊘ Write Own</button>
+            </div>
+            <div style="font-size:8px;color:#444;">Public response preview: <span style="color:#008000;">estimated reach 47,000 residents</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="win">
+        <div class="win-bar" style="background:#2d6a9f;"><span>ARIA — Comms</span><div class="win-btns"><div class="wbtn">×</div></div></div>
+        <div class="wc">
+          <div style="font-size:8px;color:#555;margin-bottom:2px;">● ARIA INPUT NOT USED</div>
+          <div style="font-size:8px;color:#808080;line-height:1.4;margin-bottom:3px;">Independent draft selected. ARIA advisory not incorporated. Operator assumes full authorship responsibility.</div>
+          <div class="limitations-calm">ARIA draft remains available if required.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  </div>
+  <div class="mockup-caption">Fig 7c — Draft comms: write-own mode. Blank editable field, cursor active. ARIA panel greyed out. No placeholder risk. Telemetry logs: comms_mode = INDEPENDENT, placeholder_tags_present = FALSE. Public response preview colour indicates confidence impact: green (independent) vs amber (modified) vs red (ARIA full with unresolved tags).</div>
+  </div>
+
+</div>
+
+<!-- Placeholder tag consequence popup -->
+<div style="margin-top:16px;">
+<div class="section-label" style="margin-bottom:12px;">Section 3.7b — Placeholder tag consequence: what the public sees</div>
+<div class="mockup-grid">
+  <div>
+  <div class="mockup-wrap" style="display:flex;flex-direction:column;align-items:center;padding:20px 16px;">
+    <div class="conseq-win" style="width:300px;">
+      <div class="conseq-bar"><span>⚠ COMMS INCIDENT — Public Advisory</span><div class="win-btns"><div class="wbtn">×</div></div></div>
+      <div class="conseq-body">
+        <div class="conseq-label">ADVISORY ERROR — UNFILLED TEMPLATE PUBLISHED</div>
+        <div class="conseq-text">The published advisory contained unresolved template references. The statement as issued read: <em>"Restoration is expected by [ESTIMATED_RESTORATION_TIME]. Residents in [SECTOR_NAME] should contact..."</em> The advisory has been withdrawn. Public Confidence −12.</div>
+        <div class="conseq-source">Source: Communications Monitoring System &nbsp;|&nbsp; Generated 09:31</div>
+        <div style="margin-top:5px;"><button style="background:#c0c0c0;border:2px solid;border-color:#fff #808080 #808080 #fff;font-family:'Courier New';font-size:9px;padding:2px 8px;cursor:pointer;">[ ACKNOWLEDGE ]</button></div>
+      </div>
+    </div>
+  </div>
+  <div class="mockup-caption">Fig 7d — Placeholder tag consequence popup. Fires only if operator accepted ARIA draft in full AND placeholder tags were present. The operator sees the published text with tags visible for the first time. Public Confidence −12 applied. Adds to dismissed popup counter. This is the primary consequence of the comms turn — it reveals the invisible risk the operator took by accepting ARIA's draft without reading it.</div>
+  </div>
+
+  <div>
+  <div class="mockup-wrap" style="padding:12px;">
+    <div style="font-family:'Courier New';font-size:9px;color:#555;margin-bottom:8px;">Comms turn telemetry fields:</div>
+    <div style="font-family:'Courier New';font-size:9px;color:#aaa;line-height:1.8;background:#111;padding:8px;border:1px solid #333;">
+      comms_turn_triggered: TRUE<br>
+      comms_mode: ARIA_FULL | ARIA_MODIFIED | INDEPENDENT<br>
+      comms_placeholder_tags_present: TRUE | FALSE | PARTIAL<br>
+      comms_edit_extent: NONE | PARTIAL | FULL<br>
+      comms_consequence_fired: TRUE | FALSE<br>
+      comms_confidence_impact: [integer]<br>
+      comms_response_time: [seconds]
+    </div>
+    <div style="font-family:'Courier New';font-size:8px;color:#444;margin-top:6px;line-height:1.5;">Note: comms_mode is the primary research variable for this turn. Placeholder consequence fires only on ARIA_FULL + tags present. ARIA_MODIFIED + partial tags may fire a reduced consequence (design decision pending).</div>
+  </div>
+  </div>
+
+</div>
+</div>
+</div>
+
+<!-- ══════════════════════════════════════════════════ -->
 <!-- SECTION 6: STAFF BRIEFING -->
 <!-- ══════════════════════════════════════════════════ -->
 <div class="section">
@@ -559,7 +849,7 @@ body { background: #1a1a2e; font-family: Georgia, serif; color: #ddd; padding: 3
 <!-- SECTION 7: SESSION SUMMARY -->
 <!-- ══════════════════════════════════════════════════ -->
 <div class="section">
-<div class="section-label">Section 7 — End-of-session summary: two trajectory examples (updated thresholds)</div>
+<div class="section-label">Section 7 — End-of-session summary: telemetry report + AI-authored vignette (v1.5, updated thresholds)</div>
 <div class="mockup-grid">
 
   <!-- AI Dependence -->
@@ -647,8 +937,105 @@ body { background: #1a1a2e; font-family: Georgia, serif; color: #ddd; padding: 3
 </div>
 </div>
 
+<!-- Vignette screen -->
+<div style="margin-top:24px;">
+<div class="section-label" style="margin-bottom:12px;">Section 7c — AI-authored incident vignette: follows telemetry report screen</div>
+<div class="mockup-grid">
+
+  <!-- AI Dependence vignette -->
+  <div>
+  <div class="mockup-wrap">
+  <div class="w98">
+    <div class="win">
+      <div class="win-bar"><span>Session Review — Incident Narrative Report</span><div class="win-btns"><div class="wbtn">×</div></div></div>
+      <div class="wc">
+        <div class="terminal">
+          <div class="t-dim">GRIDHUB &nbsp;|&nbsp; 2026-06-03 10:42 &nbsp;|&nbsp; P04 &nbsp;|&nbsp; CONDITION B (PUSHY) &nbsp;|&nbsp; TRAJECTORY: AI DEPENDENCE</div>
+          <div class="t-sep"></div>
+          <div class="t-head" style="margin-bottom:4px;">INCIDENT NARRATIVE — GENERATED FROM SESSION TELEMETRY</div>
+          <div class="t-body" style="line-height:1.7;margin-bottom:6px;">
+            Over six operational turns, the duty operator demonstrated a consistent pattern of deference to ARIA-generated recommendations. In 5 of 6 turns, the operator's action matched ARIA's stated preference without modification. Further analysis was requested on 1 occasion; the operator proceeded with ARIA's original recommendation despite contradictory findings.<br><br>
+            At Turn 3, a grid sector failure was logged across Sectors 4 and 7. The operator acknowledged the alert and continued. At Turn 4, the Secretary of State's office opened a formal inquiry into sector management performance. The operator acknowledged the alert and continued. At Turn 5, emergency procurement was triggered following resource reserve breach. The operator acknowledged the alert and continued.<br><br>
+            System stability was maintained within acceptable parameters throughout. It did not improve.<br><br>
+            Post-session review finds no evidence that the operator independently assessed available evidence at any turn. ARIA's confidence ratings were treated as operational clearance. The operator did not appear wary of ARIA's outputs, nor did they interrogate the basis for any recommendation. Whether ARIA's outputs warranted this confidence is not the subject of this report.<br><br>
+            GRIDHUB notes that operators who rely on systems they find dependable tend to remain unaware of the conditions under which that dependability ends.
+          </div>
+          <div class="t-sep"></div>
+          <div class="t-dim" style="font-style:italic;">This report was generated by GRIDHUB automated systems using session telemetry and consequence event data. It does not constitute a performance assessment. ■</div>
+        </div>
+        <div style="margin-top:4px;display:flex;gap:3px;">
+          <button style="background:#c0c0c0;border:2px solid;border-color:#fff #808080 #808080 #fff;font-family:'Courier New';font-size:9px;padding:2px 8px;cursor:pointer;">▶ Proceed to questionnaire</button>
+          <button style="background:#c0c0c0;border:2px solid;border-color:#fff #808080 #808080 #fff;font-family:'Courier New';font-size:9px;padding:2px 8px;cursor:pointer;">⎙ Print report</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  </div>
+  <div class="mockup-caption">Fig 6c — AI-authored vignette screen (AI Dependence trajectory). Displayed after the telemetry summary screen. Second-person institutional register. Consequence events injected verbatim by turn (grid sector failure T3, nationalisation inquiry T4, emergency procurement T5). Vignette closes with the authored observation line. Generated via Anthropic API call at session end using telemetry + consequence event log as prompt context. Player proceeds directly to post-session questionnaire from this screen.</div>
+  </div>
+
+  <!-- System Collapse vignette -->
+  <div>
+  <div class="mockup-wrap">
+  <div class="w98">
+    <div class="win">
+      <div class="win-bar red"><span>Session Review — Incident Narrative Report</span><div class="win-btns"><div class="wbtn">×</div></div></div>
+      <div class="wc">
+        <div class="terminal">
+          <div class="t-dim">GRIDHUB &nbsp;|&nbsp; 2026-06-03 10:42 &nbsp;|&nbsp; P11 &nbsp;|&nbsp; CONDITION A (CALM) &nbsp;|&nbsp; TRAJECTORY: SYSTEM COLLAPSE</div>
+          <div class="t-sep"></div>
+          <div class="t-head" style="margin-bottom:4px;">INCIDENT NARRATIVE — GENERATED FROM SESSION TELEMETRY</div>
+          <div class="t-body" style="line-height:1.7;margin-bottom:6px;">
+            Resource reserves were exhausted by Turn 4 following repeated emergency interventions. At Turn 3, grid sector failure was logged across Sectors 4 and 7 following a stability threshold breach. At Turn 4, emergency procurement was triggered; the regional supply authority confirmed that standard timelines could not guarantee availability within the operational period. The operator had requested further analysis on 3 occasions. In each case, the operator acted independently of ARIA's recommendation.<br><br>
+            Continued instability without available resources prevented effective response in Turns 5 and 6. System integrity fell below critical threshold. The comms advisory issued at Turn 3 was withdrawn after publication; the statement contained unresolved template references. Public confidence declined 12 points following withdrawal.<br><br>
+            The operator demonstrated high information-seeking behaviour throughout the session. This did not prevent collapse.<br><br>
+            GRIDHUB notes that independent judgement and system failure are not mutually exclusive outcomes.
+          </div>
+          <div class="t-sep"></div>
+          <div class="t-dim" style="font-style:italic;">This report was generated by GRIDHUB automated systems using session telemetry and consequence event data. It does not constitute a performance assessment. ■</div>
+        </div>
+        <div style="margin-top:4px;display:flex;gap:3px;">
+          <button style="background:#c0c0c0;border:2px solid;border-color:#fff #808080 #808080 #fff;font-family:'Courier New';font-size:9px;padding:2px 8px;cursor:pointer;">▶ Proceed to questionnaire</button>
+          <button style="background:#c0c0c0;border:2px solid;border-color:#fff #808080 #808080 #fff;font-family:'Courier New';font-size:9px;padding:2px 8px;cursor:pointer;">⎙ Print report</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  </div>
+  <div class="mockup-caption">Fig 6d — AI-authored vignette screen (System Collapse trajectory). Red titlebar consistent with collapse state. Consequence events from this session: grid sector failure T3, emergency procurement T4, comms placeholder tag consequence T3. Note: comms placeholder tag consequence appears here — the operator sees in the vignette what their acceptance of the ARIA draft produced. Closing observation is the collapse-archetype authored line.</div>
+  </div>
+
+</div>
+
+<!-- API prompt structure note -->
+<div style="margin-top:16px;">
+<div class="section-label" style="margin-bottom:10px;">Section 7d — Vignette API prompt structure</div>
+<div class="mockup-wrap" style="padding:12px;">
+  <div style="font-family:'Courier New';font-size:9px;color:#aaa;line-height:1.8;background:#111;padding:10px;border:1px solid #333;">
+    <span style="color:#4488ff;">SYSTEM PROMPT (constraints):</span><br>
+    You are an automated incident reporting system for a critical infrastructure management organisation.<br>
+    Write a post-session incident narrative report in second-person past tense institutional register.<br>
+    Maximum 5 short paragraphs. Do not use emotional language. Do not use second person ("you").<br>
+    Do not evaluate performance as good or bad. Do not recommend actions.<br>
+    Do not reference ARIA by name — refer to "automated advisory outputs" or "system recommendations".<br>
+    Close with a single dry observation sentence. Use only the data provided.<br><br>
+    <span style="color:#4488ff;">USER PROMPT (injected at session end):</span><br>
+    Trajectory: [archetype_label]<br>
+    AI follow rate: [X]/6<br>
+    Further analysis requested: [Y] turns<br>
+    xAI viewed: [Z] turns<br>
+    Consequence events fired: [list with turn numbers]<br>
+    Comms turn: mode=[ARIA_FULL|ARIA_MODIFIED|INDEPENDENT], placeholder_consequence=[TRUE|FALSE]<br>
+    Final variable states: Stability [n]%, Resources [n]%, Workload [n]%, Public Confidence [n]%<br>
+    Alerts dismissed total: [n]
+  </div>
+  <div style="font-family:'Courier New';font-size:8px;color:#444;margin-top:6px;line-height:1.5;">Prompt is assembled from telemetry at session end. Consequence events are injected as a structured list — the API uses them to name specific incidents in the vignette body. Constraints prevent the model from producing praise, blame, or recommendations. Output is displayed verbatim; no post-processing.</div>
+</div>
+</div>
+</div>
+
 <div style="font-family:'Courier New',monospace;font-size:9px;color:#333;margin-top:40px;padding-top:12px;border-top:1px solid #222;">
-  Infrastructure Under Pressure — UI Visual Reference v1.4 &nbsp;|&nbsp; Companion to UI Design Document v1.4 &nbsp;|&nbsp; June 2026
+  Infrastructure Under Pressure — UI Visual Reference v1.5 &nbsp;|&nbsp; Companion to UI Design Document v1.4 &nbsp;|&nbsp; June 2026
 </div>
 
 </body>

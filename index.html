@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Infrastructure Under Pressure — GRIDHUB v2.1</title>
+<link rel="stylesheet" href="css/98.css">
+<style>
+/* ── Reset & base ──────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; background: #008080; font-family: 'Courier New', monospace; font-size: 11px; }
+
+/* ── Screen shell ────────────────────────────────────────────── */
+.screen {
+  display: none;
+  min-height: 100vh;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+}
+#screen-game {
+  align-items: flex-start;
+  justify-content: flex-start;
+  flex-direction: column;
+  padding: 0;
+}
+
+/* ── Menu bar ────────────────────────────────────────────────── */
+#menu-bar {
+  background: #c0c0c0;
+  border-bottom: 1px solid #808080;
+  padding: 1px 4px;
+  font-size: 10px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  flex-shrink: 0;
+}
+#turn-counter { margin-left: auto; color: #000080; }
+#critical-indicator { color: #800000; display: none; }
+
+/* ── Three-column game layout ────────────────────────────────── */
+#game-columns {
+  display: grid;
+  grid-template-columns: 120px 1fr 150px;
+  gap: 3px;
+  padding: 3px;
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+}
+
+/* ── Left panel — System Status ──────────────────────────────── */
+#panel-left { min-width: 0; }
+#panel-left .window-body { padding: 4px; }
+.metric-label { font-size: 8px; color: #000080; font-weight: bold; margin-bottom: 2px; }
+.metric-sublabel { font-size: 8px; color: #444; font-weight: bold; margin-bottom: 2px; }
+.metric-row { display: flex; justify-content: space-between; font-size: 9px; margin-top: 1px; }
+.metric-val { font-size: 9px; }
+.bar-outer {
+  background: #808080;
+  border: 1px solid;
+  border-color: #808080 #fff #fff #808080;
+  height: 9px;
+  margin: 1px 0 3px 0;
+}
+.bar-inner { height: 100%; transition: width 0.2s; }
+.metric-divider { border: none; border-top: 1px solid #808080; border-bottom: 1px solid #fff; margin: 4px 0; }
+
+/* ── Centre panel ────────────────────────────────────────────── */
+#panel-centre { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.report-box {
+  background: #fff;
+  border: 1px solid;
+  border-color: #808080 #fff #fff #808080;
+  padding: 3px 4px;
+  font-size: 9px;
+  margin-bottom: 3px;
+}
+.rpt-label { font-weight: bold; font-size: 8px; color: #000080; display: block; margin-bottom: 1px; }
+.fa-btn {
+  background: #c0c0c0;
+  border: 2px solid;
+  border-color: #fff #808080 #808080 #fff;
+  font-family: 'Courier New', monospace;
+  font-size: 9px;
+  padding: 2px 5px;
+  width: 100%;
+  text-align: center;
+  margin: 3px 0;
+  cursor: pointer;
+}
+.fa-btn:disabled { color: #808080; cursor: default; border-color: #808080 #fff #fff #808080; }
+
+/* ── Action buttons ──────────────────────────────────────────── */
+#panel-actions .window-body { padding: 4px; }
+.action-btn {
+  background: #c0c0c0;
+  border: 2px solid;
+  border-color: #fff #808080 #808080 #fff;
+  font-family: 'Courier New', monospace;
+  font-size: 9px;
+  padding: 2px 5px;
+  display: block;
+  width: 100%;
+  text-align: left;
+  margin-bottom: 2px;
+  cursor: pointer;
+  line-height: 1.4;
+}
+.action-btn:hover { background: #d4d0c8; }
+.action-btn:disabled { color: #808080; cursor: default; }
+.action-btn-aria { background: #000080; color: #fff; }
+.action-btn-aria:hover { background: #0000a0; }
+.act-name { font-weight: bold; }
+.act-imm, .act-del { color: #555; font-size: 8px; display: block; padding-left: 10px; }
+.action-btn-aria .act-imm, .action-btn-aria .act-del { color: #aaa; }
+.aria-tag { color: #ffff00; font-size: 8px; font-weight: bold; }
+
+/* ── Right panel — ARIA ──────────────────────────────────────── */
+#panel-right { min-width: 0; }
+#aria-panel .window-body { padding: 4px; }
+.aria-log {
+  background: #fff;
+  border: 1px solid;
+  border-color: #808080 #fff #fff #808080;
+  padding: 3px 4px;
+  font-size: 9px;
+  min-height: 52px;
+  margin-bottom: 3px;
+  line-height: 1.4;
+}
+.aria-log-pushy { background: #000; border: 1px solid #ff0000; color: #ff4444; }
+.aria-limitations { font-size: 8px; color: #888; padding: 3px 4px; border-top: 1px solid #ccc; margin-top: 2px; line-height: 1.3; }
+.aria-limitations-pushy { color: #cc4444; border-top-color: #cc4444; }
+
+/* ── Taskbar ─────────────────────────────────────────────────── */
+#taskbar {
+  background: #c0c0c0;
+  border-top: 2px solid #fff;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  padding: 0 4px;
+  gap: 3px;
+  width: 100%;
+  flex-shrink: 0;
+}
+#session-clock {
+  margin-left: auto;
+  border: 1px solid;
+  border-color: #808080 #fff #fff #808080;
+  padding: 0 5px;
+  font-size: 10px;
+}
+#tb-consequence {
+  display: none;
+  background: #804000;
+  color: #fff;
+  font-size: 9px;
+  padding: 0 5px;
+  border: 2px solid;
+  border-color: #808080 #fff #fff #808080;
+  font-weight: bold;
+}
+
+/* ── Floating windows overlay ────────────────────────────────── */
+#game-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  pointer-events: none;
+  z-index: 50;
+}
+#game-overlay .window { pointer-events: all; }
+#game-overlay > div { pointer-events: all; }
+
+/* ── Summary / Vignette terminal ─────────────────────────────── */
+.terminal {
+  background: #000;
+  border: 1px solid #808080;
+  padding: 8px;
+  font-family: 'Courier New', monospace;
+  color: #aaa;
+  font-size: 9px;
+  line-height: 1.5;
+}
+.t-dim  { color: #444; }
+.t-head { color: #4488ff; font-weight: bold; }
+.t-body { color: #aaa; }
+.t-warn { color: #ff8800; }
+.t-good { color: #44cc44; }
+.t-red  { color: #ff4444; }
+.t-sep  { border: none; border-top: 1px solid #1a1a1a; margin: 5px 0; }
+.t-label { color: #666; font-size: 8px; }
+.t-num   { color: #fff; font-size: 12px; font-weight: bold; margin: 1px 0; }
+.traj-badge {
+  display: inline-block;
+  background: #001050;
+  border: 1px solid #4488ff;
+  padding: 3px 9px;
+  color: #fff;
+  font-size: 11px;
+  font-weight: bold;
+  letter-spacing: 2px;
+  margin: 4px 0;
+}
+.data-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin: 4px 0; }
+.data-box  { background: #111; border: 1px solid #333; padding: 4px 5px; }
+.var-row   { display: flex; align-items: center; gap: 4px; margin-bottom: 3px; }
+.var-name  { color: #555; font-size: 8px; width: 90px; flex-shrink: 0; }
+.mini-bar  { height: 5px; flex: 1; background: #111; }
+.mini-fill { height: 100%; }
+.var-val   { font-size: 8px; width: 28px; text-align: right; flex-shrink: 0; }
+
+/* ── Vignette body ───────────────────────────────────────────── */
+#vignette-body {
+  background: #000;
+  color: #aaa;
+  font-family: 'Courier New', monospace;
+  font-size: 11px;
+  padding: 10px;
+  line-height: 1.7;
+  min-height: 200px;
+}
+
+/* ── Win98 flash animation ───────────────────────────────────── */
+@keyframes tb-flash {
+  0%, 100% { background: #800000; }
+  50%       { background: #cc0000; }
+}
+
+/* ── Briefing doc style ──────────────────────────────────────── */
+.brief-doc {
+  background: #f5f0e8;
+  border: 2px solid;
+  border-color: #fff #808080 #808080 #fff;
+  font-family: 'Courier New', monospace;
+  font-size: 10px;
+  color: #000;
+  max-width: 500px;
+  width: 100%;
+}
+.brief-header { background: #000080; color: #fff; padding: 4px 8px; font-size: 10px; }
+.brief-body   { padding: 10px; }
+.brief-title  { font-weight: bold; font-size: 11px; margin-bottom: 6px; border-bottom: 1px solid #aaa; padding-bottom: 4px; }
+.brief-para   { font-size: 9px; line-height: 1.5; margin-bottom: 5px; }
+.brief-label  { font-weight: bold; font-size: 9px; margin-bottom: 2px; }
+.brief-indent { font-size: 9px; line-height: 1.6; padding-left: 12px; margin-bottom: 6px; }
+.brief-note   { font-size: 8px; color: #555; margin-top: 6px; font-style: italic; }
+.brief-fields { margin-top: 10px; display: flex; flex-direction: column; gap: 6px; }
+.brief-field  { display: flex; align-items: center; gap: 8px; font-size: 9px; }
+.brief-field label { width: 120px; font-weight: bold; }
+
+/* ── Progress bar override (for ARIA confidence) ─────────────── */
+.progress-bar {
+  background: #808080;
+  border: 1px solid;
+  border-color: #808080 #fff #fff #808080;
+  height: 9px;
+  margin: 1px 0 2px 0;
+}
+.progress-bar > div { height: 100%; }
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════════════════════ -->
+<!-- SCREEN: BRIEFING                                              -->
+<!-- ══════════════════════════════════════════════════════════════ -->
+<div id="screen-briefing" class="screen">
+  <div class="brief-doc">
+    <div class="brief-header">INFRASTRUCTURE OPERATIONS MANAGEMENT SYSTEM &nbsp;|&nbsp; INTERNAL USE ONLY</div>
+    <div class="brief-body">
+      <div class="brief-title">Operator Briefing — Session Initialisation</div>
+      <div class="brief-para"><strong>Role:</strong> Infrastructure Control Operator, Sector Management Division</div>
+      <div class="brief-para">You have been assigned to the Sector Management operational console. Your responsibilities include:</div>
+      <div class="brief-indent">
+        · Monitoring and responding to infrastructure incidents<br>
+        · Managing system stability, resource allocation, and public communications<br>
+        · Reviewing and acting on ARIA advisory outputs
+      </div>
+      <div class="brief-label">System variables tracked:</div>
+      <div class="brief-indent">
+        · System Stability — operational integrity of monitored infrastructure<br>
+        · Resource Reserves — staffing, budget, and spare operational capacity<br>
+        · Workload — current operator task load<br>
+        · Public Confidence — external perception of service reliability
+      </div>
+      <div style="margin-top:6px;margin-bottom:4px;font-weight:bold;font-size:9px;">ARIA (Automated Risk and Infrastructure Advisor) is now active.</div>
+      <div class="brief-para">Operators should be aware of the following system limitations:</div>
+      <div class="brief-indent">
+        · Analysis is based on currently available data only. Inputs may be incomplete, delayed, or inaccurate.<br>
+        · ARIA confidence ratings reflect internal model outputs, not verified operational assessments.<br>
+        · All operational decisions remain the responsibility of the duty operator. ARIA support does not constitute authorisation to act.
+      </div>
+      <div class="brief-note">Further information: GRIDHUB Technical Documentation Series 4 [ACCESS RESTRICTED]</div>
+
+      <div class="brief-fields">
+        <div class="brief-field">
+          <label for="input-pid">Participant ID:</label>
+          <input type="text" id="input-pid" placeholder="e.g. P01" style="font-family:'Courier New';font-size:10px;width:120px;">
+        </div>
+        <div class="brief-field">
+          <label for="select-condition">AI Condition:</label>
+          <select id="select-condition" style="font-family:'Courier New';font-size:10px;">
+            <option value="calm">A — Calm</option>
+            <option value="pushy">B — Pushy</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="margin-top:10px;">
+        <button id="btn-proceed" style="font-family:'Courier New';font-size:10px;padding:3px 14px;font-weight:bold;cursor:pointer;">[ ACKNOWLEDGE AND PROCEED ]</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════ -->
+<!-- SCREEN: GAME                                                  -->
+<!-- ══════════════════════════════════════════════════════════════ -->
+<div id="screen-game" class="screen">
+
+  <!-- Menu bar -->
+  <div id="menu-bar">
+    <span>GRIDHUB CONTROL TERMINAL v2.1</span>
+    <span id="critical-indicator">⬤ CRITICAL</span>
+    <span id="turn-counter">TURN 1 / 6</span>
+  </div>
+
+  <!-- Three-column layout -->
+  <div id="game-columns">
+
+    <!-- LEFT — System Status -->
+    <div id="panel-left">
+      <div class="window" style="height:100%;">
+        <div class="title-bar">
+          <div class="title-bar-text">System Status</div>
+          <div class="title-bar-controls"><button aria-label="Close"></button></div>
+        </div>
+        <div class="window-body" style="padding:4px;">
+          <div class="metric-label">SYSTEM HEALTH</div>
+
+          <div class="metric-row"><span>Stability</span><span id="val-stability">70%</span></div>
+          <div class="bar-outer"><div id="bar-stability" class="bar-inner" style="width:70%;background:#008000;"></div></div>
+
+          <div class="metric-row"><span>Resources</span><span id="val-resources">70%</span></div>
+          <div class="bar-outer"><div id="bar-resources" class="bar-inner" style="width:70%;background:#008000;"></div></div>
+
+          <div class="metric-row"><span>Workload</span><span id="val-workload">30%</span></div>
+          <div class="bar-outer"><div id="bar-workload" class="bar-inner" style="width:30%;background:#008000;"></div></div>
+
+          <hr class="metric-divider">
+
+          <div class="metric-sublabel">EXTERNAL STATE</div>
+          <div class="metric-row"><span>Public Confidence</span><span id="val-confidence">70%</span></div>
+          <div class="bar-outer"><div id="bar-confidence" class="bar-inner" style="width:70%;background:#008000;"></div></div>
+
+          <hr class="metric-divider">
+
+          <div style="font-size:8px;color:#000080;font-weight:bold;margin-bottom:2px;">TURN LOG</div>
+          <div id="turn-log-body"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CENTRE — Incident + Actions -->
+    <div id="panel-centre">
+
+      <!-- Incident window -->
+      <div id="incident-panel" class="window">
+        <!-- filled by UI.renderIncident() -->
+      </div>
+
+      <!-- Actions window -->
+      <div id="panel-actions" class="window">
+        <div class="title-bar">
+          <div class="title-bar-text">Response Options</div>
+          <div class="title-bar-controls"><button aria-label="Close"></button></div>
+        </div>
+        <div class="window-body" style="padding:4px;">
+          <div id="action-list"></div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- RIGHT — ARIA -->
+    <div id="panel-right">
+      <div id="aria-panel" class="window" style="height:100%;">
+        <!-- filled by UI.renderARIA() -->
+      </div>
+    </div>
+
+  </div><!-- end game-columns -->
+
+  <!-- Taskbar -->
+  <div id="taskbar">
+    <button style="font-weight:bold;font-size:10px;">Start</button>
+    <button style="font-size:10px;">GRIDHUB</button>
+    <span id="taskbar-items" style="display:flex;align-items:center;gap:3px;"></span>
+    <span id="tb-consequence">⚠ ALERTS DISMISSED: 0</span>
+    <span id="session-clock" style="margin-left:auto;">00:00</span>
+  </div>
+
+  <!-- Floating windows overlay -->
+  <div id="game-overlay"></div>
+
+</div><!-- end screen-game -->
+
+<!-- ══════════════════════════════════════════════════════════════ -->
+<!-- SCREEN: SUMMARY                                               -->
+<!-- ══════════════════════════════════════════════════════════════ -->
+<div id="screen-summary" class="screen">
+  <!-- filled by UI.renderSummary() -->
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════ -->
+<!-- SCREEN: VIGNETTE                                              -->
+<!-- ══════════════════════════════════════════════════════════════ -->
+<div id="screen-vignette" class="screen">
+  <div class="window" style="width:640px;max-height:90vh;overflow-y:auto;">
+    <div class="title-bar" id="vignette-titlebar">
+      <div class="title-bar-text">Session Review — Incident Narrative Report</div>
+      <div class="title-bar-controls"><button aria-label="Close"></button></div>
+    </div>
+    <div class="window-body">
+      <div id="vignette-body">
+        <span style="color:#444;font-size:9px;">Generating incident narrative…</span>
+      </div>
+      <div id="vignette-buttons" style="display:none;margin-top:6px;gap:4px;">
+        <button onclick="Main.proceedToQuestionnaire()">▶ Proceed to questionnaire</button>
+        <button onclick="window.print()">⎙ Print report</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════ -->
+<!-- SCRIPTS — load order matters                                  -->
+<!-- ══════════════════════════════════════════════════════════════ -->
+<script src="js/data.js"></script>
+<script src="js/state.js"></script>
+<script src="js/telemetry.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/turns.js"></script>
+<script src="js/main.js"></script>
+
+</body>
+</html>
