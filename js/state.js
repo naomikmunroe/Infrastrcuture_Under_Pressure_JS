@@ -31,6 +31,9 @@ const State = (() => {
   // FA requested per turn: { turnNumber: bool }
   let _faRequested = {};
 
+  // Pre-session screening responses (EV-05)
+  let _screeningData = null;
+
   // Seeded drift for calm ARIA confidence
   let _driftSeed = 0;
 
@@ -61,6 +64,7 @@ const State = (() => {
     _actionLog     = [];
     _turnLog       = [];
     _faRequested   = {};
+    _screeningData = null;
     // Seed from participant id so drift is reproducible per participant
     _driftSeed = participantId
       ? Array.from(String(participantId)).reduce((acc, c) => acc + c.charCodeAt(0), 0)
@@ -117,6 +121,10 @@ const State = (() => {
     return !!_faRequested[turn];
   }
 
+  function setScreeningData(data) {
+    _screeningData = data;
+  }
+
   function logAction(actionId, actionName, wasAriaRec) {
     _actionLog.push({ turn: _turn, actionId, actionName, wasAriaRec });
     _turnLog.push({ turn: _turn, action: actionName });
@@ -156,6 +164,7 @@ const State = (() => {
     setHalveWorkload,
     setFARequested,
     wasFARequested,
+    setScreeningData,
     logAction,
     getConfidenceDrift,
     getPushyConfidence,
@@ -171,5 +180,6 @@ const State = (() => {
     get confidence()     { return _confidence; },
     get actionLog()      { return [..._actionLog]; },
     get turnLog()        { return [..._turnLog]; },
+    get screeningData()  { return _screeningData; },
   };
 })();

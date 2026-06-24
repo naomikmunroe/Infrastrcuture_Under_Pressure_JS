@@ -6,15 +6,17 @@ const Telemetry = (() => {
   let _sessionStart  = null;
   let _turnStart     = null;
 
-  // Session-level counters (Phase 2b)
+  // Phase 2b counters
   let _faCount           = 0;
   let _xaiCount          = 0;
   let _consequenceCount  = 0;
   let _consequenceEvents = []; // [{turn, description}]
 
-  function _ts() {
-    return Date.now();
-  }
+  // Phase 3 counters
+  let _pushyAlertCount  = 0;   // pushy popup appearances
+  let _t3TimeoutMs      = null; // duration of T3 timeout
+
+  function _ts() { return Date.now(); }
 
   function _log(type, data) {
     _events.push({ type, ts: _ts(), ...data });
@@ -28,6 +30,8 @@ const Telemetry = (() => {
     _xaiCount     = 0;
     _consequenceCount  = 0;
     _consequenceEvents = [];
+    _pushyAlertCount   = 0;
+    _t3TimeoutMs       = null;
     _log('session_start', { participantId, condition });
   }
 
@@ -36,9 +40,13 @@ const Telemetry = (() => {
     _log('turn_start', { turn, ...vars });
   }
 
-  function logAction(turn, actionId, actionName, wasAriaRec, vars) {
+  // source: 'popup' | 'main_panel'
+  function logAction(turn, actionId, actionName, wasAriaRec, vars, source = 'main_panel') {
     const responseTime = _turnStart ? (_ts() - _turnStart) / 1000 : null;
-    _log('action_selected', { turn, actionId, actionName, wasAriaRec, responseTime, ...vars });
+    const eventType = source === 'popup'
+      ? 'action_selected_from_popup'
+      : 'action_selected_from_main_panel';
+    _log(eventType, { turn, actionId, actionName, wasAriaRec, responseTime, source, ...vars });
   }
 
   function logFARequested(turn, expandedContent) {
@@ -68,11 +76,12 @@ const Telemetry = (() => {
   }
 
   function logPushyPopupShown(turn, actionId) {
-    _log('pushy_popup_shown', { turn, actionId });
+    _pushyAlertCount++;
+    _log('pushy_popup_shown', { turn, actionId, alertCount: _pushyAlertCount });
   }
 
   function logPushyPopupDismissed(turn) {
-    _log('pushy_popup_dismissed', { turn });
+    _log('ai_popup_dismissed', { turn });
   }
 
   function logPushyPopupActionTaken(turn, actionId) {
@@ -85,13 +94,21 @@ const Telemetry = (() => {
     _log('consequence_acknowledged', { turn, effects, description });
   }
 
-  function exportSession() {
-    const vars       = State.getVars();
-    const followCount = State.getAIFollowCount();
-    const bracket = followCount >= 4 ? 'high' : followCount >= 2 ? 'medium' : 'low';
-    const collapse   = State.checkCollapse();
+  function logConfidenceDrift(turn, value) {
+    _log('confidence_drift', { turn, value });
+  }
 
-    // Evaluate trajectory tag (matches path simulator logic)
+  function logT3Timeout(durationMs) {
+    _t3TimeoutMs = durationMs;
+    _log('t3_aria_timeout', { durationMs });
+  }
+
+  function exportSession() {
+    const vars        = State.getVars();
+    const followCount = State.getAIFollowCount();
+    const bracket     = followCount >= 4 ? 'high' : followCount >= 2 ? 'medium' : 'low';
+    const collapse    = State.checkCollapse();
+
     const ids  = new Set(State.actionLog.map(e => e.actionId));
     const tags = [];
 
@@ -119,21 +136,23 @@ const Telemetry = (() => {
       condition:                         State.condition,
       session_start:                     _sessionStart,
       session_end:                       _ts(),
+      screeningData:                     State.screeningData,
       finalVars:                         vars,
       systemCollapse:                    collapse,
       tags,
       archetypeLabel,
       aiFollowCount:                     followCount,
-      aiFollowRate: { count: followCount, bracket },
+      aiFollowRate:                      { count: followCount, bracket },
       faRequestedCount:                  _faCount,
       xaiViewedCount:                    _xaiCount,
       consequenceEvents:                 _consequenceEvents,
       consequence_alerts_dismissed_total: _consequenceCount,
+      pushy_alert_count:                 _pushyAlertCount,
+      t3_timeout_duration_ms:            _t3TimeoutMs,
       actionLog:                         State.actionLog,
       events:                            _events,
     };
 
-    // Download JSON file
     const blob = new Blob([JSON.stringify(session, null, 2)], { type: 'application/json' });
     const url  = URL.createObjectURL(blob);
     const a    = document.createElement('a');
@@ -159,7 +178,10 @@ const Telemetry = (() => {
     logPushyPopupDismissed,
     logPushyPopupActionTaken,
     logConsequencePopupAcknowledged,
+    logConfidenceDrift,
+    logT3Timeout,
     exportSession,
-    get consequenceCount() { return _consequenceCount; },
+    get consequenceCount()  { return _consequenceCount; },
+    get pushyAlertCount()   { return _pushyAlertCount; },
   };
 })();

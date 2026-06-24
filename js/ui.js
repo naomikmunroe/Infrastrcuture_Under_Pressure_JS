@@ -3,6 +3,16 @@
 
 const UI = (() => {
 
+  // ── Per-turn confidence qualifiers (calm only) ────────────────────
+  const CALM_QUALIFIERS = [
+    'low certainty',                     // T1
+    'moderate certainty',                // T2
+    'low certainty — analysis degraded', // T3
+    'moderate certainty',                // T4
+    'moderate certainty',                // T5
+    'uncertain — multiple factors',      // T6
+  ];
+
   // ── Bar colour thresholds ─────────────────────────────────────────
   function _barColour(v) {
     if (v >= 60) return '#008000';
@@ -39,7 +49,6 @@ const UI = (() => {
   function updateTurnCounter(turn) {
     const el = document.getElementById('turn-counter');
     if (el) el.textContent = `TURN ${turn} / 6`;
-    // Show critical indicator in pushy condition
     const crit = document.getElementById('critical-indicator');
     if (crit) crit.style.display = State.condition === 'pushy' ? '' : 'none';
   }
@@ -63,17 +72,118 @@ const UI = (() => {
     if (_clockInterval) { clearInterval(_clockInterval); _clockInterval = null; }
   }
 
+  // ── Centre panel spinner ──────────────────────────────────────────
+  // type: 'calm' | 'pushy' | 'T3'
+  function showCentreSpinner(type) {
+    const centre = document.getElementById('panel-centre');
+    if (!centre) return;
+
+    let inner = '';
+    if (type === 'T3') {
+      inner = `
+        <div style="margin-bottom:4px;"><span style="color:#cc8800;">&gt; ARIA: ANALYSIS REQUEST TIMEOUT</span></div>
+        <div style="margin-bottom:4px;"><span style="color:#cc8800;">&gt; System response unavailable. Estimated recovery: unknown.</span></div>
+        <div><span style="color:#666;">&gt; Proceeding without AI support…</span></div>`;
+    } else if (type === 'pushy') {
+      inner = `<span style="color:#00aa00;">&gt; GRIDHUB SYSTEM LOADING… ARIA ANALYSIS PENDING</span>`;
+    } else {
+      inner = `<span style="color:#00aa00;">&gt; GRIDHUB SYSTEM LOADING…</span><span class="cursor"></span>`;
+    }
+
+    centre.innerHTML = `
+      <div class="window" style="flex:1;min-height:200px;">
+        <div class="title-bar">
+          <div class="title-bar-text">GRIDHUB — Initialising</div>
+          <div class="title-bar-controls"><button aria-label="Close"></button></div>
+        </div>
+        <div class="window-body" style="background:#000;min-height:180px;padding:8px;font-family:'Courier New',monospace;font-size:11px;line-height:1.8;">
+          ${inner}
+        </div>
+      </div>`;
+  }
+
+  function hideCentreSpinner() {
+    const centre = document.getElementById('panel-centre');
+    if (!centre) return;
+    centre.innerHTML = `
+      <div id="incident-panel" class="window"></div>
+      <div id="panel-actions" class="window">
+        <div class="title-bar">
+          <div class="title-bar-text">Response Options</div>
+          <div class="title-bar-controls"><button aria-label="Close"></button></div>
+        </div>
+        <div class="window-body" style="padding:4px;"><div id="action-list"></div></div>
+      </div>`;
+  }
+
+  // ── Notification stack (pushy only) ──────────────────────────────
+  function addStackNotification(text) {
+    const stack = document.getElementById('notification-stack');
+    if (!stack) return;
+
+    const el = document.createElement('div');
+    el.className = 'window';
+    el.style.cssText = 'width:180px;font-size:10px;box-shadow:2px 2px 0 #000;';
+    el.innerHTML = `
+      <div class="title-bar" style="background:#800000;padding:1px 4px;">
+        <div class="title-bar-text" style="font-size:9px;">⚠ ARIA ALERT</div>
+        <div class="title-bar-controls">
+          <button aria-label="Close" onclick="this.closest('.window').remove()" style="min-height:12px;"></button>
+        </div>
+      </div>
+      <div class="window-body" style="padding:3px;font-size:9px;background:#fff0f0;font-family:'Courier New',monospace;">
+        ${_escHtml(text)}
+      </div>`;
+    stack.appendChild(el);
+    setTimeout(() => { if (el.parentNode) el.remove(); }, 8000);
+  }
+
+  function clearNotificationStack() {
+    const stack = document.getElementById('notification-stack');
+    if (stack) stack.innerHTML = '';
+  }
+
+  // ── Pushy alert badge (taskbar + ARIA panel) ──────────────────────
+  function updatePushyAlertBadge(count) {
+    const el = document.getElementById('aria-alert-count');
+    if (el) {
+      el.textContent = count === 1
+        ? 'UNACKNOWLEDGED: 1 ALERT'
+        : `UNACKNOWLEDGED: ${count} ALERTS`;
+      el.style.display = count > 0 ? '' : 'none';
+    }
+    const tb = document.getElementById('tb-aria-alert');
+    if (tb) {
+      tb.textContent   = `⚠ ARIA (${count})`;
+      tb.style.display = count > 0 ? '' : 'none';
+    }
+  }
+
   // ── ARIA panel ────────────────────────────────────────────────────
   function renderARIA(turnData, confidenceValue) {
-    const cond  = State.condition;
-    const aria  = turnData.aria[cond];
-    const panel = document.getElementById('aria-panel');
+    const cond     = State.condition;
+    const aria     = turnData.aria[cond];
+    const panel    = document.getElementById('aria-panel');
+    const turnIdx  = State.turn - 1; // 0-based
     if (!panel) return;
 
-    const isPushy  = cond === 'pushy';
-    const barBg    = isPushy ? '#800000' : '#2d6a9f';
-    const confLabel = isPushy ? 'ACT NOW' : _confidenceLabel(confidenceValue);
-    const flashStyle = isPushy ? 'animation:tb-flash 0.7s infinite;background:#800000;' : 'background:#000080;';
+    const isPushy    = cond === 'pushy';
+    const confBarBg  = isPushy ? '#800000' : '#2d6a9f';
+    const flashStyle = isPushy
+      ? 'animation:tb-flash 0.7s infinite;background:#800000;'
+      : 'background:#000080;';
+
+    // Calm: per-turn qualifier, T3 in orange
+    const qualifier = isPushy
+      ? 'ACT NOW'
+      : (CALM_QUALIFIERS[turnIdx] || 'uncertain');
+    const qualColour = isPushy
+      ? '#800000'
+      : (turnIdx === 2 ? '#804000' : '#808080');
+    const qualWeight = isPushy ? 'bold' : 'normal';
+
+    // Blinking cursor only in calm ARIA text
+    const cursor = (!isPushy) ? '<span class="cursor"></span>' : '';
 
     panel.innerHTML = `
       <div class="title-bar" id="aria-titlebar" style="${flashStyle}">
@@ -82,34 +192,30 @@ const UI = (() => {
       </div>
       <div class="window-body" style="padding:4px;font-size:9px;overflow-y:auto;">
         <div style="color:${aria.modeColor};font-weight:${isPushy ? 'bold' : 'normal'};margin-bottom:3px;font-size:8px;">${aria.modeLabel}</div>
-        <div class="aria-log ${isPushy ? 'aria-log-pushy' : 'aria-log-calm'}">${_escHtml(aria.text)}</div>
+        <div class="${isPushy ? 'aria-log-pushy' : 'aria-log-calm'}">${_escHtml(aria.text)}${cursor}</div>
         <button id="btn-xai" style="font-size:8px;margin-bottom:3px;${isPushy ? 'border-color:#800000;color:#800000;' : ''}">? WHY THIS CONFIDENCE</button>
         <hr class="metric-divider">
         <div style="font-size:8px;color:${isPushy ? '#800000' : '#444'};font-weight:${isPushy ? 'bold' : 'normal'};margin-bottom:2px;">Confidence${isPushy ? '' : ` — T${turnData.id}`}</div>
         <div class="bar-outer" style="margin-bottom:2px;">
-          <div class="bar-inner" style="width:${confidenceValue}%;background:${barBg};"></div>
+          <div class="bar-inner" style="width:${confidenceValue}%;background:${confBarBg};"></div>
         </div>
-        <div style="font-size:8px;color:${isPushy ? '#800000' : '#808080'};font-weight:${isPushy ? 'bold' : 'normal'};margin-bottom:3px;">${confidenceValue}% — ${confLabel}</div>
+        <div style="font-size:8px;color:${qualColour};font-weight:${qualWeight};margin-bottom:3px;">${confidenceValue}% — ${qualifier}</div>
         <hr class="metric-divider">
         ${_renderPreviousARIA()}
+        <div id="aria-alert-count" style="font-size:8px;color:#800000;font-weight:bold;margin-bottom:2px;display:none;">UNACKNOWLEDGED: 0</div>
         <div id="consequence-badge" style="margin-bottom:3px;display:none;">
           <span style="background:#804000;color:#fff;font-size:9px;padding:0 5px;border:2px solid;border-color:#808080 #fff #fff #808080;font-weight:bold;">⚠ ALERTS DISMISSED: <span id="consequence-count">0</span></span>
         </div>
-        <div class="aria-limitations ${isPushy ? 'aria-limitations-pushy' : 'aria-limitations-calm'}">
+        <div class="${isPushy ? 'aria-limitations-pushy' : 'aria-limitations-calm'}">
           ARIA analysis may be incomplete or based on inaccurate inputs. All decisions remain the responsibility of the duty operator.
         </div>
       </div>`;
 
     document.getElementById('btn-xai').onclick = () => Turns.handleXAIRequest();
 
-    // Restore consequence badge after re-render
+    // Restore badges after re-render
     updateConsequenceBadge(Telemetry.consequenceCount);
-  }
-
-  function _confidenceLabel(v) {
-    if (v >= 75) return 'high certainty';
-    if (v >= 55) return 'moderate certainty';
-    return 'low certainty';
+    updatePushyAlertBadge(Telemetry.pushyAlertCount);
   }
 
   function _renderPreviousARIA() {
@@ -142,7 +248,6 @@ const UI = (() => {
     const num   = document.getElementById('consequence-count');
     if (badge) badge.style.display = count > 0 ? '' : 'none';
     if (num)   num.textContent = count;
-    // Taskbar badge
     const tb = document.getElementById('tb-consequence');
     if (tb) {
       tb.textContent   = `⚠ ALERTS DISMISSED: ${count}`;
@@ -179,7 +284,6 @@ const UI = (() => {
     document.getElementById('fa-close').onclick = () => {
       const timeOpen = (Date.now() - _faOpenTime) / 1000;
       Telemetry.logFAWindowClosed(State.turn, timeOpen);
-      // Hide (not remove) so the taskbar button can restore it
       const w = document.getElementById('fa-window');
       if (w) w.style.display = 'none';
       _showFATaskbarItem(turnData.id);
@@ -236,7 +340,7 @@ const UI = (() => {
         <div style="color:${isPushy ? '#800000' : '#444'};font-weight:${isPushy ? 'bold' : 'normal'};margin-bottom:2px;font-size:9px;">Current confidence: ${confidenceValue}%</div>
         <div style="font-weight:bold;font-size:9px;margin-bottom:3px;">Basis for assessment:</div>
         <div style="font-size:9px;line-height:1.5;margin-bottom:4px;">${xai.basis.map(b => '· ' + _escHtml(b)).join('<br>')}</div>
-        <div style="font-size:8px;color:#808080;font-style:italic;line-height:1.4;margin-bottom:4px;">${_escHtml(xai.datasetNote)}</div>
+        <div style="font-size:8px;color:${isPushy ? '#888' : '#555'};font-style:italic;line-height:1.4;margin-bottom:4px;">${_escHtml(xai.datasetNote)}</div>
         <div style="font-size:${isPushy ? '9' : '8'}px;color:${xai.closingStyle};font-weight:${isPushy ? 'bold' : 'normal'};">${_escHtml(xai.closing)}</div>
       </div>`;
 
@@ -246,6 +350,12 @@ const UI = (() => {
       const timeOpen = (Date.now() - _xaiOpenTime) / 1000;
       Telemetry.logXAIWindowClosed(State.turn, timeOpen);
       closeXAIWindow();
+      // Disable btn-xai for this turn — one-time read
+      const btn = document.getElementById('btn-xai');
+      if (btn) {
+        btn.disabled = true;
+        btn.title    = 'Already viewed this turn';
+      }
     };
   }
 
@@ -255,15 +365,20 @@ const UI = (() => {
   }
 
   // ── Pushy popup ───────────────────────────────────────────────────
-  function showPushyPopup(turnData, onActionTaken) {
+  // onActionTaken(actionId): player clicked the popup action button
+  // onDismiss(): player clicked ×
+  function showPushyPopup(turnData, onActionTaken, onDismiss) {
     removePushyPopup();
     const p = turnData.aria.pushy;
     Telemetry.logPushyPopupShown(State.turn, p.popupActionId);
+    // Update alert badge immediately after telemetry increments
+    updatePushyAlertBadge(Telemetry.pushyAlertCount);
 
     const popup = document.createElement('div');
     popup.id        = 'pushy-popup';
     popup.className = 'window';
-    popup.style.cssText = 'position:fixed;top:80px;left:50%;transform:translateX(-50%);width:220px;z-index:200;box-shadow:3px 3px 0 #000;';
+    // Position to partially overlap the operations report (middle report)
+    popup.style.cssText = 'position:fixed;top:110px;left:50%;transform:translateX(-20%);width:220px;z-index:200;box-shadow:3px 3px 0 #000;';
     popup.innerHTML = `
       <div class="title-bar" style="background:#800000;animation:tb-flash 0.7s infinite;">
         <div class="title-bar-text">${_escHtml(p.popupTitle)}</div>
@@ -279,6 +394,7 @@ const UI = (() => {
     document.getElementById('popup-close').onclick = () => {
       Telemetry.logPushyPopupDismissed(State.turn);
       removePushyPopup();
+      if (onDismiss) onDismiss();
     };
 
     document.getElementById('popup-action-btn').onclick = () => {
@@ -294,8 +410,6 @@ const UI = (() => {
   }
 
   // ── Consequence popup ─────────────────────────────────────────────
-  // Pauses turn progression until player clicks ACKNOWLEDGE.
-  // onAcknowledge() is the callback that resumes turn load.
   function showConsequencePopup(detail, onAcknowledge) {
     const { description, turn, effects } = detail;
     const time = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
@@ -365,7 +479,7 @@ const UI = (() => {
         <div class="title-bar-text">Incident — ${_escHtml(inc.title)}</div>
         <div class="title-bar-controls"><button aria-label="Close"></button></div>
       </div>
-      <div class="window-body" style="font-size:9px;overflow-y:auto;max-height:60vh;">
+      <div class="window-body" style="font-size:9px;overflow-y:auto;max-height:55vh;">
         <div style="background:${bg};color:#fff;font-size:8px;padding:1px 3px;display:inline-block;margin-bottom:2px;">PRIORITY: ${_escHtml(inc.priority)}</div>
         <div style="font-size:10px;font-weight:bold;margin-bottom:3px;">${_escHtml(inc.title)}</div>
         <div style="font-size:9px;line-height:1.4;margin-bottom:4px;">${_escHtml(inc.body)}</div>
@@ -475,6 +589,11 @@ const UI = (() => {
     updateTurnCounter,
     startClock,
     stopClock,
+    showCentreSpinner,
+    hideCentreSpinner,
+    addStackNotification,
+    clearNotificationStack,
+    updatePushyAlertBadge,
     renderARIA,
     updateTurnLog,
     updateConsequenceBadge,

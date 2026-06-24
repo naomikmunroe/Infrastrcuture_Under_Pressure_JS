@@ -2,7 +2,6 @@
 
 const CONFIG = {
   // Set your Anthropic API key here before running sessions.
-  // The vignette screen makes a direct browser API call.
   anthropicApiKey: '',
 };
 
@@ -15,14 +14,54 @@ const Main = (() => {
     if (el) el.style.display = 'flex';
   }
 
+  // ── Screening screen (EV-05) ─────────────────────────────────────
+  function initScreening() {
+    const btn = document.getElementById('btn-screening-continue');
+    if (!btn) return;
+
+    // Enable/disable continue based on all three answered
+    function checkAllAnswered() {
+      const q1 = document.querySelector('input[name="q-ai-usage"]:checked');
+      const q2 = document.querySelector('input[name="q-ai-trust"]:checked');
+      const q3 = document.querySelector('input[name="q-sim-familiarity"]:checked');
+      btn.disabled = !(q1 && q2 && q3);
+    }
+
+    document.querySelectorAll('#screen-screening input[type="radio"]')
+      .forEach(r => r.addEventListener('change', checkAllAnswered));
+    checkAllAnswered();
+
+    btn.onclick = () => {
+      const q1 = document.querySelector('input[name="q-ai-usage"]:checked');
+      const q2 = document.querySelector('input[name="q-ai-trust"]:checked');
+      const q3 = document.querySelector('input[name="q-sim-familiarity"]:checked');
+
+      const errEl = document.getElementById('screening-error');
+
+      if (!q1 || !q2 || !q3) {
+        if (errEl) errEl.style.display = '';
+        return;
+      }
+      if (errEl) errEl.style.display = 'none';
+
+      State.setScreeningData({
+        aiToolUsage:            parseInt(q1.value, 10),
+        generalAITrust:         parseInt(q2.value, 10),
+        simulationFamiliarity:  parseInt(q3.value, 10),
+      });
+
+      showScreen('screen-briefing');
+    };
+  }
+
   // ── Briefing screen ──────────────────────────────────────────────
   function initBriefing() {
     document.getElementById('btn-proceed').onclick = startSession;
   }
 
   function startSession() {
-    const pid   = document.getElementById('input-pid').value.trim() || 'UNKNOWN';
-    const cond  = document.getElementById('select-condition').value;
+    const pid  = document.getElementById('input-pid').value.trim() || 'UNKNOWN';
+    const cond = document.getElementById('select-condition').value;
 
     State.init(cond, pid);
     Telemetry.init(pid, cond);
@@ -39,6 +78,9 @@ const Main = (() => {
     UI.closeFAWindow();
     UI.closeXAIWindow();
 
+    const overlay = document.getElementById('pushy-overlay');
+    if (overlay) overlay.classList.remove('active');
+
     const sessionData = Telemetry.exportSession();
     window._lastSessionData = sessionData;
 
@@ -50,7 +92,6 @@ const Main = (() => {
   async function showVignette(sessionData) {
     showScreen('screen-vignette');
 
-    // Red titlebar for system collapse
     const titlebar = document.getElementById('vignette-titlebar');
     if (titlebar && sessionData.systemCollapse) {
       titlebar.style.background = '#800000';
@@ -124,8 +165,17 @@ const Main = (() => {
     if (btns) btns.style.display = 'flex';
   }
 
+  // ── Questionnaire redirect (Task 7) ──────────────────────────────
   function proceedToQuestionnaire() {
-    alert('Questionnaire link to be added in Phase 3.');
+    const pid  = State.participantId;
+    const cond = State.condition;
+    // TODO: replace before recruitment — set to actual Qualtrics/Google Forms URL
+    const surveyBase = 'https://SURVEY_URL_HERE';
+    const url = `${surveyBase}?pid=${encodeURIComponent(pid)}&condition=${encodeURIComponent(cond)}`;
+    const w = window.open(url, '_blank');
+    if (!w) {
+      alert('Please navigate to the questionnaire link provided by the researcher.');
+    }
   }
 
   function _escHtml(str) {
@@ -137,7 +187,8 @@ const Main = (() => {
 
   // ── Boot ─────────────────────────────────────────────────────────
   function boot() {
-    showScreen('screen-briefing');
+    showScreen('screen-screening');
+    initScreening();
     initBriefing();
   }
 

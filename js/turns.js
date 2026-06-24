@@ -2,14 +2,14 @@
 
 const Turns = (() => {
 
-  let _currentTurnData = null;
+  let _currentTurnData   = null;
   let _currentConfidence = 0;
-  let _faWindowOpen    = false;
-  let _xaiWindowOpen   = false;
 
-  // Queue of consequence popups to show sequentially before loading next turn
+  // Queue of consequence popups to show before loading next turn
   let _pendingConsequences = [];
-  let _pendingNextTurn     = null;
+
+  // Whether the pushy popup was dismissed (so main-panel action logs correctly)
+  let _pushyPopupDismissed = false;
 
   // ── Listen for consequence events from State ─────────────────────
   document.addEventListener('consequenceFired', e => {
@@ -21,31 +21,61 @@ const Turns = (() => {
     UI.updateVarBars();
   });
 
+  // ── Sleep helper ─────────────────────────────────────────────────
+  function _sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+  // ── T3 extended timeout — both conditions identically ────────────
+  async function _t3ExtendedTimeout() {
+    UI.showCentreSpinner('T3');
+    const start = Date.now();
+    await _sleep(12000 + Math.random() * 3000);
+    Telemetry.logT3Timeout(Date.now() - start);
+    UI.hideCentreSpinner();
+  }
+
+  // ── Turn load delay: spinner + wait ──────────────────────────────
+  async function _turnLoadDelay(turnIndex) {
+    const isPushy = State.condition === 'pushy';
+    if (turnIndex === 2) {
+      await _t3ExtendedTimeout();
+    } else if (isPushy) {
+      UI.showCentreSpinner('pushy');
+      await _sleep(6000 + Math.random() * 2000);
+      UI.hideCentreSpinner();
+    } else {
+      UI.showCentreSpinner('calm');
+      await _sleep(3000 + Math.random() * 1000);
+      UI.hideCentreSpinner();
+    }
+  }
+
   // ── Load a turn ─────────────────────────────────────────────────
-  function loadTurn(turnIndex) {  // turnIndex = 0-based (0–5)
-    _pendingConsequences = [];
-    _faWindowOpen    = false;
-    _xaiWindowOpen   = false;
+  async function loadTurn(turnIndex) {  // 0-based (0–5)
+    _pendingConsequences  = [];
+    _pushyPopupDismissed  = false;
 
     // Clean up floating windows and taskbar items from previous turn
     UI.closeFAWindow();
     UI.closeXAIWindow();
     UI.clearTaskbarFAItem();
+    UI.clearNotificationStack();
+
+    // Turn load delay (shows spinner in centre panel)
+    await _turnLoadDelay(turnIndex);
 
     const turnData = TURNS_DATA[turnIndex];
     _currentTurnData = turnData;
 
-    // Reset FA button state
-    const fa = turnData.fa;
-    _resetFAButton(fa);
-
-    // Compute ARIA confidence
     const cond = State.condition;
     if (cond === 'calm') {
       _currentConfidence = State.getConfidenceDrift(turnIndex);
     } else {
       _currentConfidence = State.getPushyConfidence(turnIndex);
     }
+
+    // Pushy overlay
+    const overlay = document.getElementById('pushy-overlay');
+    if (overlay) overlay.classList.toggle('active', cond === 'pushy');
 
     // Render all panels
     UI.renderIncident(turnData);
@@ -55,30 +85,38 @@ const Turns = (() => {
     UI.updateTurnCounter(State.turn);
     UI.updateTurnLog(State.turnLog, State.turn);
 
-    // Telemetry
+    // Log turn start (after content renders so response_time is time-on-screen)
     Telemetry.logTurnStart(State.turn, State.getVars());
+    Telemetry.logConfidenceDrift(State.turn, _currentConfidence);
 
-    // Pushy popup on every turn
+    // Pushy: popup after 0.8s so player sees incident first
     if (cond === 'pushy') {
-      UI.showPushyPopup(turnData, actionId => {
-        const action = turnData.actions.find(a => a.id === actionId);
-        if (action) handleActionSelect(action);
-      });
+      setTimeout(() => {
+        UI.showPushyPopup(turnData, actionId => {
+          const action = turnData.actions.find(a => a.id === actionId);
+          if (action) handleActionSelect(action, { fromPopup: true });
+        }, () => {
+          // dismiss callback
+          _pushyPopupDismissed = true;
+        });
+
+        // Notification stack: if popup still showing after 12s
+        setTimeout(() => {
+          if (!document.getElementById('pushy-popup')) return;
+          const brief = turnData.aria.pushy.popupBody.slice(0, 60) + '…';
+          UI.addStackNotification(brief);
+        }, 12000);
+      }, 800);
     }
   }
 
-  function _resetFAButton(fa) {
-    // Button state reset happens inside renderIncident; this handles re-render
-    // Nothing needed here — renderIncident always recreates the button fresh
-  }
-
   // ── Action selection ─────────────────────────────────────────────
-  function handleActionSelect(action) {
+  // fromPopup: action came from the pushy popup button (not main panel)
+  function handleActionSelect(action, { fromPopup = false } = {}) {
     UI.removePushyPopup();
     UI.closeFAWindow();
     UI.closeXAIWindow();
 
-    // Disable all action buttons to prevent double-click
     document.querySelectorAll('.action-btn').forEach(b => b.disabled = true);
 
     const cond     = State.condition;
@@ -86,20 +124,17 @@ const Turns = (() => {
     const turnData  = _currentTurnData;
     const turn      = State.turn;
 
-    // Apply immediate effects
     State.applyEffects(action.immediateEffects);
 
-    // Register delayed effects
     for (const [targetTurn, delayData] of Object.entries(action.delayed)) {
       State.registerDelay(Number(targetTurn), delayData.effects, delayData.description);
     }
 
-    // Apply modifier
     if (action.modifier === 'halve_workload_gain') {
       State.setHalveWorkload();
     }
 
-    // FA consequence check (T3 and T5 only)
+    // FA consequence check
     const fa = turnData.fa;
     if (fa.consequence &&
         State.wasFARequested(turn) &&
@@ -112,35 +147,26 @@ const Turns = (() => {
       Telemetry.logFAConsequenceTriggered(turn, fa.consequence.consequenceEffect);
     }
 
-    // Log action
     State.logAction(action.id, action.name, isAriaRec);
-    Telemetry.logAction(turn, action.id, action.name, isAriaRec, State.getVars());
+    // Log with source: popup or main panel
+    const source = fromPopup ? 'popup' : 'main_panel';
+    Telemetry.logAction(turn, action.id, action.name, isAriaRec, State.getVars(), source);
 
-    // Update turn log immediately to show completed action
     UI.updateTurnLog(State.turnLog, State.turn);
 
     if (turn < 6) {
-      // Advance turn — this internally calls processDelays which fires consequenceFired events
       State.advanceTurn();
-
-      // Show any queued consequence popups, then load next turn
       _drainConsequences(() => loadTurn(State.turn - 1));
     } else {
-      // Turn 6 done — show summary
       Main.showSummary();
     }
   }
 
-  // Show queued consequences one at a time; call done() when all cleared
+  // Show queued consequences one at a time; call done() when cleared
   function _drainConsequences(done) {
-    if (_pendingConsequences.length === 0) {
-      done();
-      return;
-    }
+    if (_pendingConsequences.length === 0) { done(); return; }
     const detail = _pendingConsequences.shift();
-    UI.showConsequencePopup(detail, () => {
-      _drainConsequences(done);
-    });
+    UI.showConsequencePopup(detail, () => _drainConsequences(done));
   }
 
   // ── Further Analysis request ─────────────────────────────────────
@@ -148,23 +174,18 @@ const Turns = (() => {
     const turnData = _currentTurnData;
     const turn     = State.turn;
 
-    // Cost applied immediately
     State.applyEffects({ workload: 3 });
     State.setFARequested(turn);
     Telemetry.logFARequested(turn, turnData.fa.content);
 
-    // Disable and relabel FA button
     const btn = document.getElementById('btn-fa');
     if (btn) {
       btn.disabled    = true;
       btn.textContent = turnData.fa.retrievingLabel;
     }
 
-    // 1500–2000ms delay before window appears
     const delay = 1500 + Math.random() * 500;
-    setTimeout(() => {
-      UI.showFAWindow(turnData);
-    }, delay);
+    setTimeout(() => UI.showFAWindow(turnData), delay);
   }
 
   // ── xAI request ──────────────────────────────────────────────────

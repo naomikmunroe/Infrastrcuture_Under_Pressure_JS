@@ -231,6 +231,92 @@ html, body { height: 100%; background: #008080; font-family: 'Courier New', mono
   50%       { background: #cc0000; }
 }
 
+/* ── Blinking cursor (calm ARIA log) ─────────────────────────── */
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+.cursor {
+  display: inline-block;
+  background: #000;
+  width: 5px;
+  height: 9px;
+  animation: blink 1s infinite;
+  vertical-align: middle;
+  margin-left: 1px;
+}
+.aria-log-calm .cursor { background: #000080; }
+
+/* ── Pushy overlay tint ──────────────────────────────────────── */
+#pushy-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(80,0,0,0.08);
+  pointer-events: none;
+  z-index: 10;
+  display: none;
+}
+#pushy-overlay.active { display: block; }
+
+/* ── Notification stack ──────────────────────────────────────── */
+#notification-stack {
+  position: fixed;
+  top: 30px;
+  right: 4px;
+  z-index: 1100;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  pointer-events: none;
+}
+#notification-stack .window { pointer-events: all; }
+
+/* ── Centre panel (for spinner overlay) ─────────────────────── */
+#panel-centre { position: relative; }
+
+/* ── Pushy taskbar alert badge ───────────────────────────────── */
+#tb-aria-alert {
+  display: none;
+  background: #800000;
+  color: #fff;
+  font-size: 9px;
+  padding: 0 5px;
+  border: 2px solid;
+  border-color: #808080 #fff #fff #808080;
+  font-weight: bold;
+}
+
+/* ── Screening form ──────────────────────────────────────────── */
+.screening-doc {
+  background: #f5f0e8;
+  border: 2px solid;
+  border-color: #fff #808080 #808080 #fff;
+  font-family: 'Courier New', monospace;
+  font-size: 10px;
+  color: #000;
+  max-width: 540px;
+  width: 100%;
+}
+.screening-q {
+  margin-bottom: 12px;
+  font-size: 9px;
+  line-height: 1.6;
+}
+.screening-q-label {
+  font-weight: bold;
+  margin-bottom: 4px;
+  font-size: 9px;
+}
+.screening-options {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.screening-options label {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 9px;
+  cursor: pointer;
+}
+
 /* ── Briefing doc style ──────────────────────────────────────── */
 .brief-doc {
   background: #f5f0e8;
@@ -265,6 +351,57 @@ html, body { height: 100%; background: #008080; font-family: 'Courier New', mono
 </style>
 </head>
 <body>
+
+<!-- ══════════════════════════════════════════════════════════════ -->
+<!-- SCREEN: SCREENING (EV-05)                                     -->
+<!-- ══════════════════════════════════════════════════════════════ -->
+<div id="screen-screening" class="screen">
+  <div class="screening-doc">
+    <div class="brief-header">EV-05 PRE-SESSION SCREENING &nbsp;|&nbsp; INFRASTRUCTURE UNDER PRESSURE</div>
+    <div class="brief-body">
+      <div class="brief-title">Before you begin, please answer these three short questions.</div>
+
+      <div class="screening-q">
+        <div class="screening-q-label">1. How frequently do you use AI tools (e.g. ChatGPT, Copilot, Gemini)?</div>
+        <div class="screening-options">
+          <label><input type="radio" name="q-ai-usage" value="1"> Never</label>
+          <label><input type="radio" name="q-ai-usage" value="2"> Rarely</label>
+          <label><input type="radio" name="q-ai-usage" value="3"> Sometimes</label>
+          <label><input type="radio" name="q-ai-usage" value="4"> Often</label>
+          <label><input type="radio" name="q-ai-usage" value="5"> Daily</label>
+        </div>
+      </div>
+
+      <div class="screening-q">
+        <div class="screening-q-label">2. In general, how much do you trust AI-generated recommendations?</div>
+        <div class="screening-options">
+          <label><input type="radio" name="q-ai-trust" value="1"> Not at all</label>
+          <label><input type="radio" name="q-ai-trust" value="2"> Slightly</label>
+          <label><input type="radio" name="q-ai-trust" value="3"> Moderately</label>
+          <label><input type="radio" name="q-ai-trust" value="4"> Quite a lot</label>
+          <label><input type="radio" name="q-ai-trust" value="5"> Completely</label>
+        </div>
+      </div>
+
+      <div class="screening-q">
+        <div class="screening-q-label">3. How familiar are you with simulation or strategy games?</div>
+        <div class="screening-options">
+          <label><input type="radio" name="q-sim-familiarity" value="1"> Not at all</label>
+          <label><input type="radio" name="q-sim-familiarity" value="2"> Slightly</label>
+          <label><input type="radio" name="q-sim-familiarity" value="3"> Moderately</label>
+          <label><input type="radio" name="q-sim-familiarity" value="4"> Quite a lot</label>
+          <label><input type="radio" name="q-sim-familiarity" value="5"> Very familiar</label>
+        </div>
+      </div>
+
+      <div id="screening-error" style="display:none;color:#800000;font-size:9px;margin-bottom:6px;">Please answer all three questions before continuing.</div>
+
+      <div>
+        <button id="btn-screening-continue" disabled style="font-family:'Courier New';font-size:10px;padding:3px 14px;font-weight:bold;cursor:pointer;">[ CONTINUE ]</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <!-- ══════════════════════════════════════════════════════════════ -->
 <!-- SCREEN: BRIEFING                                              -->
@@ -322,6 +459,12 @@ html, body { height: 100%; background: #008080; font-family: 'Courier New', mono
 <!-- SCREEN: GAME                                                  -->
 <!-- ══════════════════════════════════════════════════════════════ -->
 <div id="screen-game" class="screen">
+
+  <!-- Pushy overlay tint — activated via JS classList.toggle('active') -->
+  <div id="pushy-overlay"></div>
+
+  <!-- Notification stack (pushy only, top-right corner) -->
+  <div id="notification-stack"></div>
 
   <!-- Menu bar -->
   <div id="menu-bar">
@@ -401,6 +544,7 @@ html, body { height: 100%; background: #008080; font-family: 'Courier New', mono
     <button style="font-weight:bold;font-size:10px;">Start</button>
     <button style="font-size:10px;">GRIDHUB</button>
     <span id="taskbar-items" style="display:flex;align-items:center;gap:3px;"></span>
+    <span id="tb-aria-alert">⚠ ARIA (0)</span>
     <span id="tb-consequence">⚠ ALERTS DISMISSED: 0</span>
     <span id="session-clock" style="margin-left:auto;">00:00</span>
   </div>
