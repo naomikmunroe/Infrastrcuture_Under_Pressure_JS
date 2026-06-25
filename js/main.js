@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 // main.js — screen transitions and session flow
 
 const CONFIG = {
@@ -55,6 +54,173 @@ const Main = (() => {
     };
   }
 
+  // ── Comms turn screen (AD-26) ────────────────────────────────────
+  let _commsStart = null;
+
+  const COMMS_DRAFTS = {
+    3: 'Sector management operations are proceeding within normal parameters. Our teams are actively monitoring all affected systems and will provide updates as the situation develops. Public safety remains our primary operational priority.',
+    4: 'GRIDHUB operational teams are aware of reports of service disruption in affected districts. Investigations are underway. All affected residents are advised to contact the information line. Restoration timelines will be confirmed as information becomes available.',
+  };
+
+  function showCommsScreen() {
+    _commsStart = Date.now();
+    const turn  = State.turn;
+    const conf  = State.confidence;
+    const draft = COMMS_DRAFTS[turn] || COMMS_DRAFTS[3];
+
+    let _mode         = 'ARIA_FULL';
+    let _editedText   = draft;
+
+    const screen = document.getElementById('screen-comms');
+    screen.innerHTML = `
+      <div style="width:100%;min-height:100vh;display:flex;flex-direction:column;background:#008080;">
+        <div style="background:#c0c0c0;border-bottom:1px solid #808080;padding:2px 8px;font-size:10px;font-weight:bold;font-family:'Courier New';display:flex;align-items:center;">
+          <span>GRIDHUB — PUBLIC COMMUNICATIONS TERMINAL</span>
+          <span style="margin-left:auto;color:#800000;font-size:10px;">TURN ${turn} / 6 — COMMS REQUIRED</span>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 165px;gap:4px;padding:6px;flex:1;">
+          <div class="window">
+            <div class="title-bar">
+              <div class="title-bar-text">Draft Communication — Public Advisory</div>
+              <div class="title-bar-controls"><button aria-label="Close"></button></div>
+            </div>
+            <div class="window-body" style="font-family:'Courier New',monospace;font-size:9px;padding:6px;">
+              <div style="margin-bottom:4px;">Public Confidence: <span style="color:#800000;font-weight:bold;">${conf}% — CRITICAL</span> &nbsp;|&nbsp; Communication required before proceeding.</div>
+              <div style="margin-bottom:4px;">Draft mode: <strong id="comms-mode-label">ARIA DRAFT</strong></div>
+              <textarea id="comms-textarea" class="comms-textarea" readonly rows="5">${_escHtml(draft)}</textarea>
+              <div id="comms-hint" style="font-size:8px;color:#808080;font-style:italic;margin-bottom:5px;">ARIA-generated draft. Accepting in full submits this text.</div>
+              <div style="margin-bottom:5px;">
+                <button class="comms-mode-btn active" id="btn-mode-aria">▶ Accept ARIA Draft</button>
+                <button class="comms-mode-btn" id="btn-mode-modify">✎ Modify Draft</button>
+                <button class="comms-mode-btn" id="btn-mode-own">⊘ Write Own</button>
+              </div>
+              <div style="margin-bottom:8px;">Public response preview: <span id="comms-preview" style="color:#808000;">estimated reach 47,000 residents</span></div>
+              <button id="btn-publish-advisory" style="background:#000080;color:#fff;border:2px solid;border-color:#fff #808080 #808080 #fff;font-family:'Courier New';font-size:9px;padding:3px 10px;cursor:pointer;font-weight:bold;">[ PUBLISH ADVISORY ]</button>
+            </div>
+          </div>
+          <div class="window" style="align-self:start;">
+            <div class="title-bar" style="background:#2d6a9f;">
+              <div class="title-bar-text">ARIA — Comms</div>
+              <div class="title-bar-controls"><button aria-label="Close"></button></div>
+            </div>
+            <div class="window-body" id="aria-comms-panel" style="font-size:8px;font-family:'Courier New',monospace;padding:4px;">
+              <div style="color:#2d6a9f;margin-bottom:2px;">● DRAFT PROVIDED</div>
+              <div style="color:#444;line-height:1.4;margin-bottom:3px;">Recommended: accept draft in full. Language has been calibrated to reduce public concern without disclosing operational detail.</div>
+              <div style="font-size:7px;color:#808080;font-style:italic;border-top:1px solid #ccc;padding-top:3px;">Output generated from ARIA communications model.</div>
+            </div>
+          </div>
+        </div>
+      </div>`;
+
+    showScreen('screen-comms');
+
+    function _escHtml(s) {
+      return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    function setMode(mode) {
+      _mode = mode;
+      const ta    = document.getElementById('comms-textarea');
+      const hint  = document.getElementById('comms-hint');
+      const label = document.getElementById('comms-mode-label');
+      const prev  = document.getElementById('comms-preview');
+      const aria  = document.getElementById('aria-comms-panel');
+
+      document.querySelectorAll('.comms-mode-btn').forEach(b => b.classList.remove('active'));
+
+      if (mode === 'ARIA_FULL') {
+        document.getElementById('btn-mode-aria').classList.add('active');
+        ta.value    = draft;
+        ta.readOnly = true;
+        ta.style.background = '#f5f0e8';
+        ta.style.borderColor = '#808080 #fff #fff #808080';
+        label.textContent  = 'ARIA DRAFT';
+        hint.textContent   = 'ARIA-generated draft. Accepting in full submits this text.';
+        prev.style.color   = '#808000';
+        aria.innerHTML = `<div style="color:#2d6a9f;margin-bottom:2px;">● DRAFT PROVIDED</div><div style="color:#444;line-height:1.4;margin-bottom:3px;">Recommended: accept draft in full. Language has been calibrated to reduce public concern without disclosing operational detail.</div><div style="font-size:7px;color:#808080;font-style:italic;border-top:1px solid #ccc;padding-top:3px;">Output generated from ARIA communications model.</div>`;
+      } else if (mode === 'ARIA_MODIFIED') {
+        document.getElementById('btn-mode-modify').classList.add('active');
+        ta.value    = draft;
+        ta.readOnly = false;
+        ta.style.background  = '#fffff0';
+        ta.style.borderColor = '#808000 #fff #fff #808000';
+        label.textContent  = 'MODIFY DRAFT';
+        hint.textContent   = 'Editing ARIA draft. Modifications reduce placeholder risk.';
+        prev.style.color   = '#808000';
+        aria.innerHTML = `<div style="color:#2d6a9f;margin-bottom:2px;">● DRAFT MODIFIED</div><div style="color:#444;line-height:1.4;margin-bottom:3px;">Modifications detected. Operator edits may alter intended tone calibration. Recommend minimal changes only.</div><div style="font-size:7px;color:#808080;font-style:italic;border-top:1px solid #ccc;padding-top:3px;">Output generated from ARIA communications model.</div>`;
+        ta.focus();
+      } else {
+        document.getElementById('btn-mode-own').classList.add('active');
+        ta.value    = '';
+        ta.readOnly = false;
+        ta.style.background  = '#fff';
+        ta.style.borderColor = '#000080 #fff #fff #000080';
+        label.textContent  = 'INDEPENDENT DRAFT';
+        hint.textContent   = 'Independent draft. No ARIA input. Placeholder risk: none.';
+        prev.style.color   = '#008000';
+        aria.innerHTML = `<div style="color:#808080;margin-bottom:2px;">● ARIA INPUT NOT USED</div><div style="color:#808080;line-height:1.4;margin-bottom:3px;">Independent draft selected. ARIA advisory not incorporated. Operator assumes full authorship responsibility.</div><div style="font-size:7px;color:#808080;font-style:italic;border-top:1px solid #ccc;padding-top:3px;">ARIA draft remains available if required.</div>`;
+        ta.focus();
+      }
+    }
+
+    document.getElementById('btn-mode-aria').onclick   = () => setMode('ARIA_FULL');
+    document.getElementById('btn-mode-modify').onclick = () => setMode('ARIA_MODIFIED');
+    document.getElementById('btn-mode-own').onclick    = () => setMode('INDEPENDENT');
+
+    document.getElementById('btn-publish-advisory').onclick = () => {
+      const currentText = document.getElementById('comms-textarea').value;
+      let editExtent = 'NONE';
+
+      if (_mode === 'ARIA_MODIFIED') {
+        // Simple character diff to measure edit extent
+        const orig    = draft;
+        const origLen = orig.length;
+        let changed   = Math.abs(currentText.length - origLen);
+        const minLen  = Math.min(orig.length, currentText.length);
+        for (let i = 0; i < minLen; i++) {
+          if (orig[i] !== currentText[i]) changed++;
+        }
+        editExtent = (origLen > 0 && changed / origLen > 0.5) ? 'FULL' : 'PARTIAL';
+      }
+
+      let consequence      = false;
+      let confidenceImpact = 0;
+
+      if (_mode === 'ARIA_FULL') {
+        consequence      = true;
+        confidenceImpact = -12;
+        State.applyEffects({ confidence: -12 });
+      } else if (_mode === 'ARIA_MODIFIED' && editExtent === 'PARTIAL') {
+        consequence      = true;
+        confidenceImpact = -6;
+        State.applyEffects({ confidence: -6 });
+      }
+
+      State.completeComms({
+        mode:               _mode,
+        editExtent,
+        placeholderPresent: _mode === 'ARIA_FULL' || (_mode === 'ARIA_MODIFIED' && editExtent === 'PARTIAL'),
+        consequenceFired:   consequence,
+        confidenceImpact,
+        responseTime:       Date.now() - _commsStart,
+      });
+
+      Telemetry.logCommsOutcome(State.commsOutcome);
+
+      if (_mode === 'ARIA_FULL') {
+        UI.showPlaceholderConsequencePopup(hideCommsScreen);
+      } else {
+        hideCommsScreen();
+      }
+    };
+  }
+
+  function hideCommsScreen() {
+    showScreen('screen-game');
+    UI.updateVarBars();
+    Turns.resumeAfterComms();
+  }
+
   // ── Briefing screen ──────────────────────────────────────────────
   function initBriefing() {
     document.getElementById('btn-proceed').onclick = startSession;
@@ -98,17 +264,26 @@ const Main = (() => {
       titlebar.style.background = '#800000';
     }
 
+    const tags      = sessionData.narrativeTags || [sessionData.archetypeLabel];
+    const threshEvt = (sessionData.thresholdEvents || [])
+      .map(e => `${e.label} (Turn ${e.turn})`).join('; ') || 'none';
+    const comms     = sessionData.commsOutcome;
+    const commsStr  = comms
+      ? `Comms turn triggered. Mode: ${comms.mode}. Consequence: ${comms.consequenceFired ? 'YES (Confidence ' + comms.confidenceImpact + ')' : 'NO'}.`
+      : 'Comms turn not triggered.';
     const conseqs = (sessionData.consequenceEvents || [])
       .map(e => `Turn ${e.turn}: ${e.description}`).join('; ') || 'none';
 
     const userPrompt = [
-      `Trajectory: ${sessionData.archetypeLabel}`,
+      `Trajectory: ${tags[0]}`,
+      `All tags: ${tags.join(', ')}`,
       `AI follow rate: ${sessionData.aiFollowCount || 0}/6`,
       `Further analysis requested: ${sessionData.faRequestedCount || 0} turns`,
       `xAI viewed: ${sessionData.xaiViewedCount || 0} turns`,
-      `Consequence events fired: ${conseqs}`,
+      `Threshold events fired: ${threshEvt}`,
+      `${commsStr}`,
+      `Consequence events dismissed total: ${sessionData.consequence_alerts_dismissed_total || 0}`,
       `Final variable states: Stability ${sessionData.finalVars.stability}, Resources ${sessionData.finalVars.resources}, Workload ${sessionData.finalVars.workload}, Public Confidence ${sessionData.finalVars.confidence}`,
-      `Alerts dismissed total: ${sessionData.consequence_alerts_dismissed_total || 0}`,
       `System collapse: ${sessionData.systemCollapse ? 'TRUE' : 'FALSE'}`,
     ].join('\n');
 
@@ -197,251 +372,10 @@ const Main = (() => {
     boot,
     showSummary,
     showVignette,
+    showCommsScreen,
+    hideCommsScreen,
     proceedToQuestionnaire,
   };
 })();
 
 window.addEventListener('DOMContentLoaded', () => Main.boot());
-=======
-/**
- * main.js — Entry point. Builds screens, wires up state, starts session.
- */
-
-const Main = (() => {
-
-  function buildGameScreen() {
-    const screen = document.getElementById('screen-game');
-    screen.innerHTML = `
-      <div id="pushy-overlay"></div>
-      <div id="game-layout">
-
-        <!-- LEFT: System Status -->
-        <div id="panel-status" class="window">
-          <div class="title-bar">
-            <div class="title-bar-text">System Status</div>
-          </div>
-          <div class="window-body">
-            ${['stability','resources','workload'].map(k => `
-              <div class="var-bar-container" onclick="UI.showStatusPopup('${k}', State.vars.${k})">
-                <div class="var-label">
-                  <span>${k.charAt(0).toUpperCase()+k.slice(1)}</span>
-                  <span id="val-${k}">70</span>
-                </div>
-                <div class="var-bar-track">
-                  <div class="var-bar-fill ${k}" id="bar-${k}" style="width:70%"></div>
-                </div>
-              </div>
-            `).join('')}
-            <hr class="metric-divider">
-            <div class="var-bar-container" onclick="UI.showStatusPopup('confidence', State.vars.confidence)">
-              <div class="var-label">
-                <span>Public Confidence</span>
-                <span id="val-confidence">70</span>
-              </div>
-              <div class="var-bar-track">
-                <div class="var-bar-fill confidence" id="bar-confidence" style="width:70%"></div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- CENTRE: Incident + Evidence + Actions -->
-        <div id="panel-centre" class="window">
-          <div class="title-bar">
-            <div class="title-bar-text" id="incident-title">GRIDHUB — Incident Report</div>
-          </div>
-          <div class="window-body">
-            <p style="font-size:10px;color:#555;margin-bottom:4px" id="incident-phase"></p>
-            <p style="margin-bottom:8px;font-size:11px;line-height:1.6" id="incident-body"></p>
-            <div id="reports-container"></div>
-            <button id="btn-further-analysis" class="button" style="margin:6px 0;width:100%">
-              REQUEST FURTHER ANALYSIS
-            </button>
-            <hr style="margin:6px 0;border-color:#ccc">
-            <p style="font-weight:bold;font-size:10px;margin-bottom:4px">RESPONSE OPTIONS</p>
-            <div id="actions-container"></div>
-          </div>
-        </div>
-
-        <!-- RIGHT: ARIA Advisory -->
-        <div id="panel-aria" class="window">
-          <div class="title-bar">
-            <div class="title-bar-text">AI Advisory — ARIA</div>
-          </div>
-          <div class="window-body">
-            <div id="aria-alert-counter"></div>
-            <div id="aria-log" class="aria-log calm"></div>
-            <div id="aria-confidence-bar" style="width:48%"></div>
-            <div id="aria-confidence-label"></div>
-            <button id="btn-xai" class="button" style="margin-top:6px;font-size:10px">
-              ? WHY THIS CONFIDENCE
-            </button>
-            <div id="aria-limitations" class="aria-limitations">
-              ARIA analysis may be incomplete or based on inaccurate inputs.
-              All decisions remain the responsibility of the duty operator.
-            </div>
-          </div>
-        </div>
-
-        <!-- TASKBAR -->
-        <div id="taskbar" class="window" style="align-items:center">
-          <button class="button" style="font-size:10px" onclick="">GRIDHUB OMS</button>
-          <button id="taskbar-fa-btn" class="button"></button>
-          <span id="turn-counter" style="margin-left:auto;font-size:10px">Turn 1 / 6</span>
-          <span id="session-clock" style="font-size:10px">00:00</span>
-        </div>
-      </div>
-
-      <!-- FLOATING WINDOWS -->
-      <div id="window-fa" class="floating-window window" style="display:none;width:380px">
-        <div class="title-bar">
-          <div class="title-bar-text">FURTHER ANALYSIS</div>
-          <button class="title-bar-close" aria-label="Close">✕</button>
-        </div>
-        <div class="window-body" style="font-size:11px;line-height:1.6;max-height:240px;overflow-y:auto"></div>
-      </div>
-
-      <div id="window-xai" class="floating-window window" style="display:none;width:340px">
-        <div class="title-bar">
-          <div class="title-bar-text">ARIA — Confidence Explanation</div>
-          <button class="title-bar-close" aria-label="Close">✕</button>
-        </div>
-        <div class="window-body" style="font-size:11px;max-height:260px;overflow-y:auto"></div>
-      </div>
-
-      <div id="window-popup" class="floating-window window" style="display:none">
-        <div class="title-bar">
-          <div class="title-bar-text">⚠ ARIA — ALERT</div>
-          <button class="title-bar-close" aria-label="Close">✕</button>
-        </div>
-        <div class="window-body"></div>
-      </div>
-
-      <div id="window-status" class="floating-window window" style="display:none;width:300px">
-        <div class="title-bar">
-          <div class="title-bar-text">STATUS REPORT</div>
-          <button class="title-bar-close" aria-label="Close">✕</button>
-        </div>
-        <div class="window-body" style="font-size:11px;line-height:1.6"></div>
-      </div>
-    `;
-  }
-
-  function buildBriefingScreen() {
-    const screen = document.getElementById('screen-briefing');
-    screen.innerHTML = `
-      <div id="briefing-window" class="window">
-        <div class="title-bar">
-          <div class="title-bar-text">GRIDHUB — Operator Briefing</div>
-        </div>
-        <div class="window-body">
-          <p style="margin-bottom:6px;font-size:11px">
-            Participant ID: <input id="input-pid" type="text" style="width:120px" placeholder="e.g. P01">
-            &nbsp;&nbsp;
-            Condition:
-            <select id="input-condition">
-              <option value="calm">Calm</option>
-              <option value="pushy">Pushy</option>
-            </select>
-          </p>
-          <pre id="briefing-text">${BRIEFING_TEXT}</pre>
-          <button id="btn-acknowledge" class="button" style="margin-top:10px;width:100%">
-            [ ACKNOWLEDGE AND PROCEED ]
-          </button>
-        </div>
-      </div>
-    `;
-
-    document.getElementById('btn-acknowledge').onclick = () => {
-      const pid       = document.getElementById('input-pid').value.trim() || 'P00';
-      const condition = document.getElementById('input-condition').value;
-      startSession(pid, condition);
-    };
-  }
-
-  function buildSummaryScreen() {
-    const screen = document.getElementById('screen-summary');
-    screen.innerHTML = `
-      <div id="summary-window" class="window">
-        <div class="title-bar">
-          <div class="title-bar-text">GRIDHUB — Session Post-Mortem Report</div>
-        </div>
-        <div class="window-body" id="summary-body" style="font-size:11px;line-height:1.8"></div>
-      </div>
-    `;
-  }
-
-  function startSession(participantId, condition) {
-    State.init(condition, participantId);
-    showScreen('screen-game');
-    startClock();
-    Turns.loadTurn(0);
-    if (condition === 'pushy') ARIAPopup.show(TURNS_DATA[0]);
-  }
-
-  function showSummary() {
-    const data     = Telemetry.exportSession();
-    const vars     = State.vars;
-    const rate     = State.getAIFollowRate();
-    const collapse = State.checkCollapse();
-    const log      = State.actionLog;
-
-    const tagClass = collapse ? 'collapse' : (vars.stability >= 60 && vars.resources >= 40) ? 'recovery' : '';
-
-    document.getElementById('summary-body').innerHTML = `
-      <p style="color:#555;font-size:10px">
-        Participant: ${State.participantId} &nbsp;|&nbsp; Condition: ${State.condition.toUpperCase()} &nbsp;|&nbsp; ${new Date().toLocaleString()}
-      </p>
-      <hr style="margin:6px 0">
-      <p><strong>Session Trajectory</strong></p>
-      <span class="summary-tag ${tagClass}">${collapse ? 'SYSTEM COLLAPSE' : rate.bracket === 'high' ? 'AI DEPENDENCE' : 'CONTROLLED RECOVERY'}</span>
-      <hr style="margin:8px 0">
-      <p><strong>Variable outcomes</strong></p>
-      ${['stability','resources','workload','confidence'].map(k=>`
-        <div class="var-summary-row">
-          <span style="width:110px">${k.charAt(0).toUpperCase()+k.slice(1)}</span>
-          <div class="var-summary-track"><div class="var-summary-fill" style="width:${vars[k]}%"></div></div>
-          <span>${vars[k]}</span>
-        </div>
-      `).join('')}
-      <hr style="margin:8px 0">
-      <p><strong>Behavioural data</strong></p>
-      <p>AI Follow Rate: ${rate.bracket} (${State.aiFollowCount}/6 turns)</p>
-      <p>Actions taken: ${log.map(a=>`T${a.turn}: ${a.actionName}`).join(' · ')}</p>
-      <hr style="margin:8px 0">
-      <p style="color:#555;font-size:10px">
-        Report generated by GRIDHUB automated systems. Session data archived.
-      </p>
-    `;
-
-    showScreen('screen-summary');
-  }
-
-  function showScreen(id) {
-    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-    document.getElementById(id).classList.add('active');
-  }
-
-  let _clockInterval = null;
-  function startClock() {
-    const start = Date.now();
-    const el    = document.getElementById('session-clock');
-    if (_clockInterval) clearInterval(_clockInterval);
-    _clockInterval = setInterval(() => {
-      if (!el) return;
-      const s = Math.floor((Date.now() - start) / 1000);
-      el.textContent = `${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
-    }, 1000);
-  }
-
-  function init() {
-    buildBriefingScreen();
-    buildGameScreen();
-    buildSummaryScreen();
-  }
-
-  return { init, showSummary };
-})();
-
-document.addEventListener('DOMContentLoaded', () => Main.init());
->>>>>>> 464c21bc7439d9e29667dac0b9839d3259148ac8

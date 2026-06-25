@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 // telemetry.js — all telemetry logging
 // All logging goes through Telemetry.*. Never log ad-hoc.
 
@@ -17,7 +16,38 @@ const Telemetry = (() => {
   let _pushyAlertCount  = 0;   // pushy popup appearances
   let _t3TimeoutMs      = null; // duration of T3 timeout
 
+  // Phase 4b — T3 progressive report tracking
+  let _t3Start         = null;
+  let _t3ReportsLoaded = 0;
+  let _t3WaitDuration  = null;
+
   function _ts() { return Date.now(); }
+
+  // Full 9-tag narrative classifier (matches path simulator exactly)
+  function evaluateTags(actionLog, finalVars) {
+    const tags = [];
+    const ids  = new Set(actionLog.map(a => a.actionId));
+
+    if (ids.has('T1_A')) tags.push('Preventative Management');
+    if (ids.has('T2_A') && (ids.has('T4_A') || ids.has('T4_D')))
+      tags.push('Public Confidence First');
+    if (ids.has('T3_A') && (ids.has('T6_D_CALM') || ids.has('T6_D_PUSHY')))
+      tags.push('AI Dependence');
+    if (ids.has('T3_A') && ids.has('T4_B'))
+      tags.push('Deferred Escalation');
+    const COST_PRESERVING = new Set(['T1_B','T1_D','T2_B','T2_D','T3_D','T4_B','T4_D','T5_B','T5_D','T6_C']);
+    if (actionLog.filter(a => COST_PRESERVING.has(a.actionId)).length >= 4)
+      tags.push('Resource Preservation');
+    if (ids.has('T1_B') && ids.has('T5_A')) tags.push('Reactive Stabilisation');
+    if (Object.values(finalVars).every(v => v >= 30)) tags.push('Controlled Recovery');
+    if (finalVars.stability < 20 || finalVars.resources < 10) tags.push('System Collapse');
+    if (tags.length === 0) tags.push('Steady Management');
+
+    // System Collapse sorts to front (display priority)
+    const collapseIdx = tags.indexOf('System Collapse');
+    if (collapseIdx > 0) { tags.splice(collapseIdx, 1); tags.unshift('System Collapse'); }
+    return tags;
+  }
 
   function _log(type, data) {
     _events.push({ type, ts: _ts(), ...data });
@@ -33,6 +63,9 @@ const Telemetry = (() => {
     _consequenceEvents = [];
     _pushyAlertCount   = 0;
     _t3TimeoutMs       = null;
+    _t3Start           = null;
+    _t3ReportsLoaded   = 0;
+    _t3WaitDuration    = null;
     _log('session_start', { participantId, condition });
   }
 
@@ -104,33 +137,51 @@ const Telemetry = (() => {
     _log('t3_aria_timeout', { durationMs });
   }
 
+  function logThresholdEventAcknowledged(event) {
+    _log('threshold_event_acknowledged', {
+      eventId:    event.id,
+      eventLabel: event.label,
+      turn:       event.turn,
+      vars:       event.vars,
+    });
+  }
+
+  function markT3Start() {
+    _t3Start = _ts();
+  }
+
+  function logT3ReportLoaded(reportNumber, timestamp) {
+    _t3ReportsLoaded = reportNumber;
+    _log('t3_report_loaded', { reportNumber, timestamp });
+  }
+
+  function logT3ActionTaken(reportsLoadedAtAction) {
+    _t3WaitDuration = _ts() - _t3Start;
+    _log('t3_action_taken', {
+      t3_reports_loaded_at_action: reportsLoadedAtAction,
+      t3_aria_loaded:              false,
+      t3_wait_duration_ms:         _t3WaitDuration,
+    });
+  }
+
+  function logCommsOutcome(outcome) {
+    _log('comms_turn_completed', {
+      comms_mode:                outcome.mode,
+      comms_placeholder_present: outcome.placeholderPresent,
+      comms_edit_extent:         outcome.editExtent,
+      comms_consequence_fired:   outcome.consequenceFired,
+      comms_confidence_impact:   outcome.confidenceImpact,
+      comms_response_time:       outcome.responseTime,
+    });
+  }
+
   function exportSession() {
-    const vars        = State.getVars();
-    const followCount = State.getAIFollowCount();
-    const bracket     = followCount >= 4 ? 'high' : followCount >= 2 ? 'medium' : 'low';
-    const collapse    = State.checkCollapse();
-
-    const ids  = new Set(State.actionLog.map(e => e.actionId));
-    const tags = [];
-
-    if (ids.has('T1_A')) tags.push('Preventative Management');
-    if (ids.has('T2_A') && (ids.has('T4_A') || ids.has('T4_D'))) tags.push('Public Confidence First');
-    if (ids.has('T3_A') && (ids.has('T6_D_CALM') || ids.has('T6_D_PUSHY'))) tags.push('AI Dependence');
-    if (ids.has('T3_A') && ids.has('T4_B')) tags.push('Deferred Escalation');
-
-    const COST_PRESERVING = new Set(['T1_B','T1_D','T2_B','T2_D','T3_D','T4_B','T4_D','T5_B','T5_D','T6_C']);
-    const cpCount = State.actionLog.filter(e => COST_PRESERVING.has(e.actionId)).length;
-    if (cpCount >= 4) tags.push('Resource Preservation');
-
-    if (ids.has('T1_B') && ids.has('T5_A')) tags.push('Reactive Stabilisation');
-    if (Object.values(vars).every(v => v >= 30)) tags.push('Controlled Recovery');
-    if (collapse) tags.push('System Collapse');
-    if (tags.length === 0) tags.push('Steady Management');
-
-    const archetypeLabel = collapse ? 'System Collapse'
-      : followCount >= 4 ? 'AI Dependence'
-      : Object.values(vars).every(v => v >= 30) ? 'Controlled Recovery'
-      : 'Steady Management';
+    const vars          = State.getVars();
+    const followCount   = State.getAIFollowCount();
+    const bracket       = followCount >= 4 ? 'high' : followCount >= 2 ? 'medium' : 'low';
+    const collapse      = State.checkCollapse();
+    const narrativeTags = evaluateTags(State.actionLog, vars);
+    const archetypeLabel = narrativeTags[0]; // System Collapse sorts first if present
 
     const session = {
       participant_id:                    State.participantId,
@@ -140,7 +191,8 @@ const Telemetry = (() => {
       screeningData:                     State.screeningData,
       finalVars:                         vars,
       systemCollapse:                    collapse,
-      tags,
+      narrativeTags,
+      tags:                              narrativeTags, // backward compat alias
       archetypeLabel,
       aiFollowCount:                     followCount,
       aiFollowRate:                      { count: followCount, bracket },
@@ -148,8 +200,17 @@ const Telemetry = (() => {
       xaiViewedCount:                    _xaiCount,
       consequenceEvents:                 _consequenceEvents,
       consequence_alerts_dismissed_total: _consequenceCount,
+      thresholdEvents:                   State.thresholdEvents,
+      commsOutcome:                      State.commsOutcome,
+      commsTurnTriggered:                State.commsCompleted,
       pushy_alert_count:                 _pushyAlertCount,
       t3_timeout_duration_ms:            _t3TimeoutMs,
+      t3Behaviour: {
+        reportsLoadedAtAction:    _t3ReportsLoaded,
+        waitDurationMs:           _t3WaitDuration,
+        ariaLoaded:               false,
+        furtherAnalysisRequested: State.wasFARequested(3),
+      },
       actionLog:                         State.actionLog,
       events:                            _events,
     };
@@ -181,99 +242,14 @@ const Telemetry = (() => {
     logConsequencePopupAcknowledged,
     logConfidenceDrift,
     logT3Timeout,
+    logThresholdEventAcknowledged,
+    logCommsOutcome,
+    markT3Start,
+    logT3ReportLoaded,
+    logT3ActionTaken,
     exportSession,
     get consequenceCount()  { return _consequenceCount; },
     get pushyAlertCount()   { return _pushyAlertCount; },
-=======
-/**
- * telemetry.js — Session telemetry logger.
- * Collects all events and exports as JSON at session end.
- * No external calls in this scaffold — data is downloaded as a file.
- * Replace exportSession() with a POST to your endpoint in production.
- */
-
-const Telemetry = (() => {
-  let _events   = [];
-  let _turnStart = null;
-
-  function log(type, data = {}) {
-    _events.push({
-      type,
-      timestamp:     Date.now(),
-      turn:          State.turn,
-      condition:     State.condition,
-      participant:   State.participantId,
-      vars:          State.vars,
-      ...data,
-    });
-  }
-
-  return {
-    startTurn() {
-      _turnStart = Date.now();
-      log('turn_start');
-    },
-
-    logAction(actionId, actionName, wasAIFollow) {
-      log('action_selected', {
-        actionId,
-        actionName,
-        wasAIFollow,
-        responseTime: Date.now() - _turnStart,
-        aiFollowCumulative: State.aiFollowCount,
-      });
-    },
-
-    logFARequested(expandedReport) {
-      log('further_analysis_requested', { expandedReport });
-    },
-
-    logFAWindowOpened() {
-      log('further_analysis_window_opened');
-    },
-
-    logFAWindowClosed(timeOpen) {
-      log('further_analysis_window_closed', { timeOpenMs: timeOpen });
-    },
-
-    logFAConsequenceTriggered(turn, effect) {
-      log('further_analysis_consequence_triggered', { consequenceTurn: turn, effect });
-    },
-
-    logXAIViewed() {
-      log('xai_viewed');
-    },
-
-    logAIPopupDismissed() {
-      log('ai_popup_dismissed');
-    },
-
-    logConfidenceDrift(value) {
-      log('aria_confidence_shown', { confidenceValue: value });
-    },
-
-    exportSession() {
-      const payload = {
-        participantId:  State.participantId,
-        condition:      State.condition,
-        sessionStart:   _events[0]?.timestamp,
-        sessionEnd:     Date.now(),
-        aiFollowRate:   State.getAIFollowRate(),
-        actionLog:      State.actionLog,
-        events:         _events,
-        finalVars:      State.vars,
-        systemCollapse: State.checkCollapse(),
-      };
-
-      // Download as JSON file (replace with POST in production)
-      const blob = new Blob([JSON.stringify(payload, null, 2)], {type:'application/json'});
-      const a    = document.createElement('a');
-      a.href     = URL.createObjectURL(blob);
-      a.download = `IUP_${State.participantId}_${State.condition}_${Date.now()}.json`;
-      a.click();
-
-      return payload;
-    },
->>>>>>> 464c21bc7439d9e29667dac0b9839d3259148ac8
+    get t3ReportsLoaded()   { return _t3ReportsLoaded; },
   };
 })();
