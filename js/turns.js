@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 // turns.js — turn loading and action selection handler
 
 const Turns = (() => {
@@ -12,9 +11,25 @@ const Turns = (() => {
   // Whether the pushy popup was dismissed (so main-panel action logs correctly)
   let _pushyPopupDismissed = false;
 
+  // Stored callback to resume turn loading after comms screen
+  let _pendingTurnLoad = null;
+
+  // Token to cancel stale T3 progressive-load callbacks when a new turn starts
+  let _loadToken = 0;
+
+  // How many T3 reports have loaded so far this turn (for telemetry at action time)
+  let _t3ReportsLoaded = 0;
+
   // ── Listen for consequence events from State ─────────────────────
   document.addEventListener('consequenceFired', e => {
     _pendingConsequences.push(e.detail);
+  });
+
+  // ── Listen for threshold events from State (AD-25) ────────────────
+  document.addEventListener('thresholdEvent', e => {
+    UI.showConsequencePopup(e.detail, () => {
+      Telemetry.logThresholdEventAcknowledged(e.detail);
+    });
   });
 
   // ── Listen for variable changes ──────────────────────────────────
@@ -25,21 +40,10 @@ const Turns = (() => {
   // ── Sleep helper ─────────────────────────────────────────────────
   function _sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
-  // ── T3 extended timeout — both conditions identically ────────────
-  async function _t3ExtendedTimeout() {
-    UI.showCentreSpinner('T3');
-    const start = Date.now();
-    await _sleep(12000 + Math.random() * 3000);
-    Telemetry.logT3Timeout(Date.now() - start);
-    UI.hideCentreSpinner();
-  }
-
-  // ── Turn load delay: spinner + wait ──────────────────────────────
+  // ── Turn load delay: spinner + wait (not used for T3 — handled separately) ──
   async function _turnLoadDelay(turnIndex) {
     const isPushy = State.condition === 'pushy';
-    if (turnIndex === 2) {
-      await _t3ExtendedTimeout();
-    } else if (isPushy) {
+    if (isPushy) {
       UI.showCentreSpinner('pushy');
       await _sleep(6000 + Math.random() * 2000);
       UI.hideCentreSpinner();
@@ -51,18 +55,37 @@ const Turns = (() => {
   }
 
   // ── Load a turn ─────────────────────────────────────────────────
+  // ── Comms turn check (AD-26) ─────────────────────────────────────
+  function checkCommsRequired() {
+    if (State.turn >= 3 && State.turn <= 4 &&
+        State.confidence < 35 &&
+        !State.commsCompleted) {
+      State.setCommsRequired();
+      Main.showCommsScreen();
+      return true;
+    }
+    return false;
+  }
+
+  function resumeAfterComms() {
+    if (_pendingTurnLoad) {
+      const fn = _pendingTurnLoad;
+      _pendingTurnLoad = null;
+      fn();
+    }
+  }
+
   async function loadTurn(turnIndex) {  // 0-based (0–5)
+    const token = ++_loadToken;
     _pendingConsequences  = [];
     _pushyPopupDismissed  = false;
+    _pendingTurnLoad      = null;
+    _t3ReportsLoaded      = 0;
 
-    // Clean up floating windows and taskbar items from previous turn
     UI.closeFAWindow();
     UI.closeXAIWindow();
     UI.clearTaskbarFAItem();
     UI.clearNotificationStack();
-
-    // Turn load delay (shows spinner in centre panel)
-    await _turnLoadDelay(turnIndex);
 
     const turnData = TURNS_DATA[turnIndex];
     _currentTurnData = turnData;
@@ -74,41 +97,97 @@ const Turns = (() => {
       _currentConfidence = State.getPushyConfidence(turnIndex);
     }
 
-    // Pushy overlay
     const overlay = document.getElementById('pushy-overlay');
     if (overlay) overlay.classList.toggle('active', cond === 'pushy');
 
-    // Render all panels
-    UI.renderIncident(turnData);
-    UI.renderActions(turnData);
-    UI.renderARIA(turnData, _currentConfidence);
-    UI.updateVarBars();
-    UI.updateTurnCounter(State.turn);
-    UI.updateTurnLog(State.turnLog, State.turn);
+    if (turnIndex === 2) {
+      // T3: two parallel systems — progressive reports + ARIA degradation
+      Telemetry.markT3Start();
 
-    // Log turn start (after content renders so response_time is time-on-screen)
-    Telemetry.logTurnStart(State.turn, State.getVars());
-    Telemetry.logConfidenceDrift(State.turn, _currentConfidence);
+      const staleConf = cond === 'calm'
+        ? State.getConfidenceDrift(1)
+        : State.getPushyConfidence(1);
 
-    // Pushy: popup after 0.8s so player sees incident first
-    if (cond === 'pushy') {
-      setTimeout(() => {
-        UI.showPushyPopup(turnData, actionId => {
-          const action = turnData.actions.find(a => a.id === actionId);
-          if (action) handleActionSelect(action, { fromPopup: true });
-        }, () => {
-          // dismiss callback
-          _pushyPopupDismissed = true;
-        });
+      UI.renderIncidentT3Start(turnData);
+      UI.renderActionsLocked(turnData);
+      UI.showARIADegraded(staleConf);
+      UI.updateVarBars();
+      UI.updateTurnCounter(State.turn);
+      UI.updateTurnLog(State.turnLog, State.turn);
 
-        // Notification stack: if popup still showing after 12s
+      Telemetry.logTurnStart(State.turn, State.getVars());
+      Telemetry.logConfidenceDrift(State.turn, _currentConfidence);
+
+      _loadTurnT3ARIA(token);                        // fire and forget
+      await _loadTurnT3Reports(token, turnData);     // progressive reports
+
+    } else {
+      // All other turns: spinner delay then full render
+      await _turnLoadDelay(turnIndex);
+
+      UI.renderIncident(turnData);
+      UI.renderActions(turnData);
+      UI.renderARIA(turnData, _currentConfidence);
+      UI.updateVarBars();
+      UI.updateTurnCounter(State.turn);
+      UI.updateTurnLog(State.turnLog, State.turn);
+
+      Telemetry.logTurnStart(State.turn, State.getVars());
+      Telemetry.logConfidenceDrift(State.turn, _currentConfidence);
+
+      if (cond === 'pushy') {
         setTimeout(() => {
-          if (!document.getElementById('pushy-popup')) return;
-          const brief = turnData.aria.pushy.popupBody.slice(0, 60) + '…';
-          UI.addStackNotification(brief);
-        }, 12000);
-      }, 800);
+          if (_loadToken !== token) return;
+          UI.showPushyPopup(turnData, actionId => {
+            const action = turnData.actions.find(a => a.id === actionId);
+            if (action) handleActionSelect(action, { fromPopup: true });
+          }, () => {
+            _pushyPopupDismissed = true;
+          });
+
+          setTimeout(() => {
+            if (_loadToken !== token) return;
+            if (!document.getElementById('pushy-popup')) return;
+            const brief = turnData.aria.pushy.popupBody.slice(0, 60) + '…';
+            UI.addStackNotification(brief);
+          }, 12000);
+        }, 800);
+      }
     }
+  }
+
+  // T3 System 1: progressive report loading
+  async function _loadTurnT3Reports(token, turnData) {
+    await _sleep(3000);
+    if (_loadToken !== token) return;
+    UI.appendReport(turnData, 0);       // Technical Report
+    UI.unlockActions();
+    _t3ReportsLoaded = 1;
+    Telemetry.logT3ReportLoaded(1, Date.now());
+
+    await _sleep(4000);                 // 7s total
+    if (_loadToken !== token) return;
+    UI.appendReport(turnData, 1);       // Operations Report
+    _t3ReportsLoaded = 2;
+    Telemetry.logT3ReportLoaded(2, Date.now());
+
+    await _sleep(4000);                 // 11s total
+    if (_loadToken !== token) return;
+    UI.appendReportPartial(turnData, 2); // Risk Assessment — partial
+    _t3ReportsLoaded = 3;
+    Telemetry.logT3ReportLoaded(3, Date.now());
+
+    await _sleep(3000);                 // 14s total
+    if (_loadToken !== token) return;
+    UI.updateReportToTimeout();         // Risk Assessment timeout
+  }
+
+  // T3 System 2: ARIA degradation background behaviour (pushy only)
+  async function _loadTurnT3ARIA(token) {
+    if (State.condition !== 'pushy') return;
+    await _sleep(8000);
+    if (_loadToken !== token) return;
+    UI.addStackNotification('⚠ ARIA: UNABLE TO COMPLETE ANALYSIS — act on available data');
   }
 
   // ── Action selection ─────────────────────────────────────────────
@@ -149,15 +228,24 @@ const Turns = (() => {
     }
 
     State.logAction(action.id, action.name, isAriaRec);
-    // Log with source: popup or main panel
     const source = fromPopup ? 'popup' : 'main_panel';
     Telemetry.logAction(turn, action.id, action.name, isAriaRec, State.getVars(), source);
+
+    if (turn === 3) {
+      Telemetry.logT3ActionTaken(_t3ReportsLoaded);
+    }
 
     UI.updateTurnLog(State.turnLog, State.turn);
 
     if (turn < 6) {
       State.advanceTurn();
-      _drainConsequences(() => loadTurn(State.turn - 1));
+      _drainConsequences(() => {
+        if (checkCommsRequired()) {
+          _pendingTurnLoad = () => loadTurn(State.turn - 1);
+          return;
+        }
+        loadTurn(State.turn - 1);
+      });
     } else {
       Main.showSummary();
     }
@@ -200,150 +288,6 @@ const Turns = (() => {
     handleActionSelect,
     handleFARequest,
     handleXAIRequest,
+    resumeAfterComms,
   };
-=======
-/**
- * turns.js — Turn orchestration.
- * Loads a turn, handles action selection, fires consequence logic.
- */
-
-const Turns = (() => {
-
-  let _currentTurnData  = null;
-  let _faWindowOpen     = false;
-  let _xaiViewed        = false;
-  let _confidenceValue  = 0;
-
-  function loadTurn(turnIndex) {
-    _currentTurnData = TURNS_DATA[turnIndex];
-    _faWindowOpen    = false;
-    _xaiViewed       = false;
-
-    // Process any delayed effects arriving this turn
-    // (already called in State.advanceTurn for turns > 1)
-
-    // Render incident
-    document.getElementById('incident-title').textContent =
-      `TURN ${_currentTurnData.id} — ${_currentTurnData.title}`;
-    document.getElementById('incident-phase').textContent = _currentTurnData.phase;
-    document.getElementById('incident-body').textContent  = _currentTurnData.incident;
-
-    // Render reports
-    UI.renderReports(_currentTurnData.reports);
-
-    // Further analysis button
-    const faBtn = document.getElementById('btn-further-analysis');
-    if (faBtn) {
-      faBtn.disabled    = false;
-      faBtn.textContent = 'REQUEST FURTHER ANALYSIS';
-      faBtn.onclick     = () => handleFARequest();
-    }
-
-    // Hide FA window and taskbar button from previous turn
-    const faWin = document.getElementById('window-fa');
-    if (faWin)  faWin.style.display = 'none';
-    const tbBtn = document.getElementById('taskbar-fa-btn');
-    if (tbBtn)  tbBtn.classList.remove('visible');
-
-    // xAI button
-    const xaiBtn = document.getElementById('btn-xai');
-    if (xaiBtn) {
-      xaiBtn.disabled = false;
-      xaiBtn.onclick  = () => handleXAI();
-    }
-    const xaiWin = document.getElementById('window-xai');
-    if (xaiWin) xaiWin.style.display = 'none';
-
-    // ARIA
-    _confidenceValue = State.condition === 'calm'
-      ? State.getConfidenceDrift(turnIndex)
-      : 82 + Math.floor(Math.random() * 10); // pushy: always 82–91%
-
-    Telemetry.logConfidenceDrift(_confidenceValue);
-    UI.updateARIA(
-      State.condition,
-      _currentTurnData.aria[State.condition],
-      _confidenceValue
-    );
-
-    // Pushy overlay tint
-    const overlay = document.getElementById('pushy-overlay');
-    if (overlay) overlay.classList.toggle('visible', State.condition === 'pushy');
-
-    // Render actions
-    UI.renderActions(_currentTurnData.actions, handleActionSelect);
-
-    // Update turn counter
-    const counter = document.getElementById('turn-counter');
-    if (counter) counter.textContent = `Turn ${State.turn} / 6`;
-
-    Telemetry.startTurn();
-  }
-
-  function handleFARequest() {
-    const fa    = _currentTurnData.furtherAnalysis;
-    const faBtn = document.getElementById('btn-further-analysis');
-
-    // Apply cost immediately
-    State.applyEffects({workload: +3});
-    State.setFARequested(State.turn);
-    Telemetry.logFARequested(fa.expandedReport);
-
-    faBtn.disabled    = true;
-    faBtn.textContent = 'FURTHER ANALYSIS RECEIVED';
-
-    // Loading delay — 1.5–2 seconds
-    const delay = 1500 + Math.random() * 500;
-    faBtn.textContent = 'RETRIEVING ANALYSIS…';
-
-    setTimeout(() => {
-      faBtn.textContent = 'FURTHER ANALYSIS RECEIVED';
-      UI.showFAWindow(fa);
-    }, delay);
-  }
-
-  function handleXAI() {
-    UI.showXAIWindow(State.condition, _confidenceValue);
-    _xaiViewed = true;
-  }
-
-  function handleActionSelect(action) {
-    // Determine if this matches ARIA recommendation
-    const ariaAction = State.condition === 'calm' ? 'T6_D_CALM' : 'T6_D_PUSHY';
-    // (For T1–T5, ARIA recommendation is the first action listed — implementation detail)
-    const wasAIFollow = action.id === ariaAction || action.id === _currentTurnData.actions[0].id;
-
-    // Apply modifier if present
-    if (action.modifier === 'halve_workload_gain') State.setHalveWorkload();
-
-    // Apply immediate effects
-    State.applyEffects(action.immediateEffects);
-
-    // Register delayed effects
-    Object.entries(action.delayedEffects).forEach(([turn, effects]) => {
-      State.registerDelay(Number(turn), effects);
-    });
-
-    // Further analysis consequence
-    const fa = _currentTurnData.furtherAnalysis;
-    if (fa.consequence && State.wasFARequested(State.turn) && action.id === fa.consequenceAction) {
-      State.registerDelay(fa.consequenceTurn, fa.consequenceEffect);
-      Telemetry.logFAConsequenceTriggered(fa.consequenceTurn, fa.consequenceEffect);
-    }
-
-    // Log
-    State.logAction(action.id, action.name, wasAIFollow);
-    Telemetry.logAction(action.id, action.name, wasAIFollow);
-
-    // Advance or end
-    if (State.turn >= 6) {
-      Main.showSummary();
-    } else {
-      State.advanceTurn();
-      loadTurn(State.turn - 1);
-    }
-  }
-
-  return { loadTurn };
->>>>>>> 464c21bc7439d9e29667dac0b9839d3259148ac8
 })();

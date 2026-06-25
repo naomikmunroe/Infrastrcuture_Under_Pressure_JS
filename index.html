@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<<<<<<< HEAD
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Infrastructure Under Pressure — GRIDHUB v2.1</title>
@@ -340,6 +339,41 @@ html, body { height: 100%; background: #008080; font-family: 'Courier New', mono
 .brief-field  { display: flex; align-items: center; gap: 8px; font-size: 9px; }
 .brief-field label { width: 120px; font-weight: bold; }
 
+/* ── Comms turn (AD-26) ──────────────────────────────────────── */
+.comms-mode-btn {
+  background: #c0c0c0;
+  border: 2px solid;
+  border-color: #fff #808080 #808080 #fff;
+  font-family: 'Courier New', monospace;
+  font-size: 9px;
+  padding: 2px 6px;
+  cursor: pointer;
+  margin-right: 3px;
+}
+.comms-mode-btn.active {
+  background: #000080;
+  color: #fff;
+  border-color: #808080 #fff #fff #808080;
+}
+.comms-textarea {
+  background: #f5f0e8;
+  border: 1px solid;
+  border-color: #808080 #fff #fff #808080;
+  padding: 5px;
+  font-size: 9px;
+  line-height: 1.5;
+  font-family: 'Courier New', monospace;
+  width: 100%;
+  resize: vertical;
+  margin-bottom: 4px;
+  color: #000;
+}
+#screen-comms {
+  align-items: flex-start;
+  justify-content: flex-start;
+  padding: 0;
+}
+
 /* ── Progress bar override (for ARIA confidence) ─────────────── */
 .progress-bar {
   background: #808080;
@@ -556,6 +590,13 @@ html, body { height: 100%; background: #008080; font-family: 'Courier New', mono
 </div><!-- end screen-game -->
 
 <!-- ══════════════════════════════════════════════════════════════ -->
+<!-- SCREEN: COMMS TURN (AD-26) — populated by Main.showCommsScreen -->
+<!-- ══════════════════════════════════════════════════════════════ -->
+<div id="screen-comms" class="screen">
+  <!-- filled by Main.showCommsScreen() -->
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════ -->
 <!-- SCREEN: SUMMARY                                               -->
 <!-- ══════════════════════════════════════════════════════════════ -->
 <div id="screen-summary" class="screen">
@@ -593,27 +634,5 @@ html, body { height: 100%; background: #008080; font-family: 'Courier New', mono
 <script src="js/turns.js"></script>
 <script src="js/main.js"></script>
 
-=======
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>GRIDHUB — Infrastructure Operations Management System</title>
-  <link rel="stylesheet" href="css/98.css">
-  <link rel="stylesheet" href="css/game.css">
-</head>
-<body>
-  <!-- SCREENS -->
-  <div id="screen-briefing"  class="screen active"></div>
-  <div id="screen-game"      class="screen"></div>
-  <div id="screen-summary"   class="screen"></div>
-
-  <!-- SCRIPTS — order matters -->
-  <script src="js/data.js"></script>
-  <script src="js/state.js"></script>
-  <script src="js/telemetry.js"></script>
-  <script src="js/ui.js"></script>
-  <script src="js/turns.js"></script>
-  <script src="js/aria.js"></script>
-  <script src="js/main.js"></script>
->>>>>>> 464c21bc7439d9e29667dac0b9839d3259148ac8
 </body>
 </html>
