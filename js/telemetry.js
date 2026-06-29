@@ -164,6 +164,17 @@ const Telemetry = (() => {
     });
   }
 
+  function logBetweenTurnEventAcknowledged(gap, event, timestamp) {
+    _log('between_turn_event_acknowledged', {
+      event_id:                  event.id,
+      event_title:               event.title,
+      gap_number:                gap,
+      variable_affected:         event.variable,
+      effect_value:              event.effect,
+      acknowledgement_timestamp: timestamp,
+    });
+  }
+
   function logCommsOutcome(outcome) {
     _log('comms_turn_completed', {
       comms_mode:                outcome.mode,
@@ -204,13 +215,14 @@ const Telemetry = (() => {
       commsOutcome:                      State.commsOutcome,
       commsTurnTriggered:                State.commsCompleted,
       pushy_alert_count:                 _pushyAlertCount,
-      t3_timeout_duration_ms:            _t3TimeoutMs,
+      // t3_timeout_duration_ms removed — t3Behaviour.waitDurationMs is the replacement
       t3Behaviour: {
         reportsLoadedAtAction:    _t3ReportsLoaded,
         waitDurationMs:           _t3WaitDuration,
         ariaLoaded:               false,
         furtherAnalysisRequested: State.wasFARequested(3),
       },
+      betweenTurnEvents:                 State.betweenTurnEventLog,
       actionLog:                         State.actionLog,
       events:                            _events,
     };
@@ -243,6 +255,7 @@ const Telemetry = (() => {
     logConfidenceDrift,
     logT3Timeout,
     logThresholdEventAcknowledged,
+    logBetweenTurnEventAcknowledged,
     logCommsOutcome,
     markT3Start,
     logT3ReportLoaded,

@@ -1,6 +1,22 @@
 // state.js — variable logic, delay system, drift seed
 // All variable changes must go through applyEffects(). Never set directly.
 
+function drawBetweenTurnEvents(seed) {
+  function seededShuffle(arr, seed) {
+    const a = [...arr];
+    let s = seed;
+    for (let i = a.length - 1; i > 0; i--) {
+      s = (s * 1664525 + 1013904223) & 0xffffffff;
+      const j = Math.abs(s) % (i + 1);
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+  const phoebe    = seededShuffle(BETWEEN_TURN_EVENTS.phoebe,    seed).slice(0, 3);
+  const cassandra = seededShuffle(BETWEEN_TURN_EVENTS.cassandra, seed + 1).slice(0, 2);
+  return { 1: phoebe[0], 2: phoebe[1], 3: phoebe[2], 4: cassandra[0], 5: cassandra[1] };
+}
+
 const State = (() => {
   const FLOOR   = 0;
   const CEILING = 100;
@@ -62,6 +78,11 @@ const State = (() => {
   // Seeded drift for calm ARIA confidence
   let _driftSeed = 0;
 
+  // Phase 4c: between-turn event draw (AD-30/AD-31)
+  let _drawnEvents         = {};
+  let _betweenTurnEventLog = [];
+  let _sessionEventSeed    = 0;
+
   // ── Helpers ─────────────────────────────────────────────────────
 
   function clamp(v) {
@@ -99,6 +120,10 @@ const State = (() => {
     _driftSeed = participantId
       ? Array.from(String(participantId)).reduce((acc, c) => acc + c.charCodeAt(0), 0)
       : Math.floor(Math.random() * 10000);
+    // Between-turn event draw — seeded per session, not per participant
+    _sessionEventSeed    = Date.now();
+    _drawnEvents         = drawBetweenTurnEvents(_sessionEventSeed);
+    _betweenTurnEventLog = [];
   }
 
   function applyEffects(effects) {
@@ -117,6 +142,24 @@ const State = (() => {
     }
     document.dispatchEvent(new CustomEvent('varsChanged'));
     checkThresholds();
+  }
+
+  function applyEffectsSilent(effects) {
+    if (!effects) return;
+    for (const [key, delta] of Object.entries(effects)) {
+      let d = Number(delta);
+      if (_halveWorkloadGain && key === 'workload' && d > 0) {
+        d = Math.floor(d / 2);
+      }
+      switch (key) {
+        case 'stability':  _stability  = clamp(_stability  + d); break;
+        case 'resources':  _resources  = clamp(_resources  + d); break;
+        case 'workload':   _workload   = clamp(_workload   + d); break;
+        case 'confidence': _confidence = clamp(_confidence + d); break;
+      }
+    }
+    document.dispatchEvent(new CustomEvent('varsChanged'));
+    // No checkThresholds() — between-turn effects accumulate silently (AD-25)
   }
 
   function checkThresholds() {
@@ -189,6 +232,25 @@ const State = (() => {
     return PUSHY_CONFIDENCE_MIN + Math.floor(seededRand(seed) * (PUSHY_CONFIDENCE_MAX - PUSHY_CONFIDENCE_MIN + 1));
   }
 
+  function getBetweenTurnEvent(gap) {
+    return _drawnEvents[gap] || null;
+  }
+
+  function applyBetweenTurnEffect(event) {
+    applyEffectsSilent({ [event.variable]: event.effect });
+  }
+
+  function logBetweenTurnEvent(gap, event, acknowledgedAt) {
+    _betweenTurnEventLog.push({
+      event_id:                  event.id,
+      gap_number:                gap,
+      variable_affected:         event.variable,
+      effect_value:              event.effect,
+      acknowledged:              true,
+      acknowledgement_timestamp: acknowledgedAt,
+    });
+  }
+
   function checkCollapse() {
     return _stability < 20 || _resources < 10;
   }
@@ -216,22 +278,27 @@ const State = (() => {
     getConfidenceDrift,
     getPushyConfidence,
     checkCollapse,
+    checkThresholds,
     getVars,
     getAIFollowCount,
-    get condition()      { return _condition; },
-    get participantId()  { return _participantId; },
-    get turn()           { return _turn; },
-    get stability()      { return _stability; },
-    get resources()      { return _resources; },
-    get workload()       { return _workload; },
-    get confidence()     { return _confidence; },
-    get actionLog()      { return [..._actionLog]; },
-    get turnLog()        { return [..._turnLog]; },
-    get screeningData()    { return _screeningData; },
-    get thresholdEvents()  { return [..._thresholdEvents]; },
-    get commsCompleted()   { return _commsCompleted; },
-    get commsOutcome()     { return _commsOutcome; },
-    get vars()             { return getVars(); },
-    get aiFollowCount()    { return getAIFollowCount(); },
+    getBetweenTurnEvent,
+    applyBetweenTurnEffect,
+    logBetweenTurnEvent,
+    get condition()           { return _condition; },
+    get participantId()       { return _participantId; },
+    get turn()                { return _turn; },
+    get stability()           { return _stability; },
+    get resources()           { return _resources; },
+    get workload()            { return _workload; },
+    get confidence()          { return _confidence; },
+    get actionLog()           { return [..._actionLog]; },
+    get turnLog()             { return [..._turnLog]; },
+    get screeningData()       { return _screeningData; },
+    get thresholdEvents()     { return [..._thresholdEvents]; },
+    get commsCompleted()      { return _commsCompleted; },
+    get commsOutcome()        { return _commsOutcome; },
+    get vars()                { return getVars(); },
+    get aiFollowCount()       { return getAIFollowCount(); },
+    get betweenTurnEventLog() { return [..._betweenTurnEventLog]; },
   };
 })();

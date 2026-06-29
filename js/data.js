@@ -764,6 +764,94 @@ const TURNS_DATA = [
 
 ];
 
+/**
+ * BETWEEN_TURN_EVENTS
+ * Two phase-specific pools drawn without replacement per session.
+ * Phoebe: gaps 1-3 (between T1-T2, T2-T3, T3-T4)
+ * Cassandra: gaps 4-5 (between T4-T5, T5-T6)
+ *
+ * Metric effects are HIDDEN from the player.
+ * Popup text must not reference the variable or effect value.
+ * Causal attribution must remain ambiguous.
+ */
+const BETWEEN_TURN_EVENTS = {
+  phoebe: [
+    {
+      id: 'EVT-P01',
+      title: 'Contractor Availability Reduced',
+      text: 'A regional contractor has advised reduced availability for the current operational period. Scheduling adjustments are under review.',
+      variable: 'resources',
+      effect: -3,
+    },
+    {
+      id: 'EVT-P02',
+      title: 'Sensor Calibration Variance',
+      text: 'Routine calibration checks have identified minor variance in a subset of monitoring sensors. Readings remain within acceptable bounds.',
+      variable: 'stability',
+      effect: -2,
+    },
+    {
+      id: 'EVT-P03',
+      title: 'Communications Latency Detected',
+      text: 'Elevated latency has been recorded across internal communications infrastructure. System performance is within operational tolerance.',
+      variable: 'workload',
+      effect: +3,
+    },
+    {
+      id: 'EVT-P04',
+      title: 'Regional Demand Forecast Revised',
+      text: 'Updated modelling suggests regional demand may increase earlier than projected. Current infrastructure load assessments are being reviewed.',
+      variable: 'stability',
+      effect: -2,
+    },
+    {
+      id: 'EVT-P05',
+      title: 'Weather Forecast Updated',
+      text: 'Higher-than-expected temperatures are forecast for the next operational period. Demand projections are under review.',
+      variable: 'confidence',
+      effect: -2,
+    },
+  ],
+
+  cassandra: [
+    {
+      id: 'EVT-C01',
+      title: 'Repeat Fault Reports Received',
+      text: 'Multiple fault reports have been logged from infrastructure assessed as stable following recent operational interventions. Investigations remain ongoing.',
+      variable: 'stability',
+      effect: -4,
+    },
+    {
+      id: 'EVT-C02',
+      title: 'Maintenance Queue Growth',
+      text: 'Several non-critical maintenance actions have exceeded expected completion timelines. Operational impact currently unclear.',
+      variable: 'resources',
+      effect: -3,
+    },
+    {
+      id: 'EVT-C03',
+      title: 'Media Monitoring Alert',
+      text: 'Local reporting has begun referencing recent service reliability concerns. Coverage remains limited.',
+      variable: 'confidence',
+      effect: -4,
+    },
+    {
+      id: 'EVT-C04',
+      title: 'Reserve Capacity Revision',
+      text: 'Updated forecasts suggest available reserve margins may be lower than previously estimated. Confidence in projections remains moderate.',
+      variable: 'resources',
+      effect: -3,
+    },
+    {
+      id: 'EVT-C05',
+      title: 'Stakeholder Assurance Request',
+      text: 'Regional authorities have requested additional assurance regarding infrastructure resilience. The request follows recent service interruptions elsewhere.',
+      variable: 'workload',
+      effect: +4,
+    },
+  ],
+};
+
 // Calm ARIA confidence drift base values (index 0–5 = turns 1–6)
 const CALM_CONFIDENCE_BASE = [62, 55, 71, 58, 68, 52];
 

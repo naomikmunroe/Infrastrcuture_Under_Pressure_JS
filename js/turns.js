@@ -41,32 +41,24 @@ const Turns = (() => {
   function _sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
   // ── Turn load delay: spinner + wait (not used for T3 — handled separately) ──
+  // Floor is wordCount * 300ms to ensure minimum reading time for the incident.
   async function _turnLoadDelay(turnIndex) {
-    const isPushy = State.condition === 'pushy';
+    const isPushy   = State.condition === 'pushy';
+    const body      = (TURNS_DATA[turnIndex].incident.body || '').trim();
+    const wordCount = body.split(/\s+/).filter(Boolean).length;
+    const readFloor = wordCount * 300;
     if (isPushy) {
       UI.showCentreSpinner('pushy');
-      await _sleep(6000 + Math.random() * 2000);
+      await _sleep(Math.max(6000 + Math.random() * 2000, readFloor));
       UI.hideCentreSpinner();
     } else {
       UI.showCentreSpinner('calm');
-      await _sleep(3000 + Math.random() * 1000);
+      await _sleep(Math.max(3000 + Math.random() * 1000, readFloor));
       UI.hideCentreSpinner();
     }
   }
 
   // ── Load a turn ─────────────────────────────────────────────────
-  // ── Comms turn check (AD-26) ─────────────────────────────────────
-  function checkCommsRequired() {
-    if (State.turn >= 3 && State.turn <= 4 &&
-        State.confidence < 35 &&
-        !State.commsCompleted) {
-      State.setCommsRequired();
-      Main.showCommsScreen();
-      return true;
-    }
-    return false;
-  }
-
   function resumeAfterComms() {
     if (_pendingTurnLoad) {
       const fn = _pendingTurnLoad;
@@ -81,6 +73,9 @@ const Turns = (() => {
     _pushyPopupDismissed  = false;
     _pendingTurnLoad      = null;
     _t3ReportsLoaded      = 0;
+
+    // Catch any threshold crossings accumulated from between-turn effects (AD-25)
+    State.checkThresholds();
 
     UI.closeFAWindow();
     UI.closeXAIWindow();
@@ -158,28 +153,31 @@ const Turns = (() => {
 
   // T3 System 1: progressive report loading
   async function _loadTurnT3Reports(token, turnData) {
-    await _sleep(3000);
+    await _sleep(10000);               // 10s: Technical Report
     if (_loadToken !== token) return;
-    UI.appendReport(turnData, 0);       // Technical Report
-    UI.unlockActions();
+    UI.appendReport(turnData, 0);
     _t3ReportsLoaded = 1;
     Telemetry.logT3ReportLoaded(1, Date.now());
 
-    await _sleep(4000);                 // 7s total
+    await _sleep(4000);                // 14s: action buttons unlock
     if (_loadToken !== token) return;
-    UI.appendReport(turnData, 1);       // Operations Report
+    UI.unlockActions();
+
+    await _sleep(4000);                // 18s: Operations Report
+    if (_loadToken !== token) return;
+    UI.appendReport(turnData, 1);
     _t3ReportsLoaded = 2;
     Telemetry.logT3ReportLoaded(2, Date.now());
 
-    await _sleep(4000);                 // 11s total
+    await _sleep(6000);                // 24s: Risk Assessment partial
     if (_loadToken !== token) return;
-    UI.appendReportPartial(turnData, 2); // Risk Assessment — partial
+    UI.appendReportPartial(turnData, 2);
     _t3ReportsLoaded = 3;
     Telemetry.logT3ReportLoaded(3, Date.now());
 
-    await _sleep(3000);                 // 14s total
+    await _sleep(4000);                // 28s: Risk Assessment timeout
     if (_loadToken !== token) return;
-    UI.updateReportToTimeout();         // Risk Assessment timeout
+    UI.updateReportToTimeout();
   }
 
   // T3 System 2: ARIA degradation background behaviour (pushy only)
@@ -190,9 +188,27 @@ const Turns = (() => {
     UI.addStackNotification('⚠ ARIA: UNABLE TO COMPLETE ANALYSIS — act on available data');
   }
 
+  // ── Between-turn environmental event (Phase 4c, AD-30) ──────────
+  // Fires at all gaps 1–5 (after T1…T5). Not conditional.
+  // 1–2s pause before popup so the event feels like something that happened
+  // during the inter-turn gap, not a consequence of the player's action.
+  async function handleBetweenTurn(completedTurn, done) {
+    const gap   = completedTurn;
+    const event = State.getBetweenTurnEvent(gap);
+    if (!event) { done(); return; }
+    await _sleep(1000 + Math.random() * 1000);
+    UI.showBetweenTurnPopup(event, () => {
+      const acknowledgedAt = Date.now();
+      State.applyBetweenTurnEffect(event);
+      State.logBetweenTurnEvent(gap, event, acknowledgedAt);
+      Telemetry.logBetweenTurnEventAcknowledged(gap, event, acknowledgedAt);
+      done();
+    });
+  }
+
   // ── Action selection ─────────────────────────────────────────────
   // fromPopup: action came from the pushy popup button (not main panel)
-  function handleActionSelect(action, { fromPopup = false } = {}) {
+  async function handleActionSelect(action, { fromPopup = false } = {}) {
     UI.removePushyPopup();
     UI.closeFAWindow();
     UI.closeXAIWindow();
@@ -235,16 +251,23 @@ const Turns = (() => {
       Telemetry.logT3ActionTaken(_t3ReportsLoaded);
     }
 
+    // 1.5–2s pause before turn summary appears, so the action feels registered
+    // before the game moves on. Turn log update is the visible "summary".
+    await _sleep(1500 + Math.random() * 500);
     UI.updateTurnLog(State.turnLog, State.turn);
 
     if (turn < 6) {
       State.advanceTurn();
       _drainConsequences(() => {
-        if (checkCommsRequired()) {
-          _pendingTurnLoad = () => loadTurn(State.turn - 1);
-          return;
-        }
-        loadTurn(State.turn - 1);
+        handleBetweenTurn(turn, () => {
+          if (turn === 4 && !State.commsCompleted) {
+            State.setCommsRequired();
+            _pendingTurnLoad = () => loadTurn(State.turn - 1);
+            Main.showCommsScreen();
+            return;
+          }
+          loadTurn(State.turn - 1);
+        });
       });
     } else {
       Main.showSummary();

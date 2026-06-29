@@ -453,9 +453,46 @@ const UI = (() => {
     document.getElementById(`${id}-x`).onclick   = ack;
   }
 
-  // ── Placeholder consequence popup (comms turn ARIA_FULL mode) ────
-  function showPlaceholderConsequencePopup(onAcknowledge) {
+  // ── Between-turn environmental event popup (Phase 4c, AD-30) ─────
+  // Fires at turn summary, before next incident loads.
+  // Variable effect is NOT shown; applied silently on acknowledge.
+  function showBetweenTurnPopup(event, onAcknowledge) {
     const time = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+    const id   = 'bte-' + Date.now();
+
+    const popup = document.createElement('div');
+    popup.className   = 'window';
+    popup.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:320px;z-index:300;box-shadow:3px 3px 0 #000;';
+    popup.innerHTML = `
+      <div class="title-bar" style="background:#804000;">
+        <div class="title-bar-text">&#9888; GRIDHUB &#8212; ENVIRONMENTAL EVENT</div>
+        <div class="title-bar-controls"><button aria-label="Close" id="${id}-x"></button></div>
+      </div>
+      <div class="window-body" style="font-size:9px;font-family:'Courier New',monospace;">
+        <div style="font-size:8px;color:#804000;font-weight:bold;letter-spacing:1px;margin-bottom:3px;">ENVIRONMENTAL EVENT</div>
+        <div style="font-weight:bold;font-size:11px;margin-bottom:6px;">${_escHtml(event.title)}</div>
+        <div style="font-size:11px;line-height:1.6;margin-bottom:8px;">${_escHtml(event.text)}</div>
+        <div style="font-size:8px;color:#808080;font-style:italic;margin-bottom:8px;">Source: GRIDHUB Environmental Monitoring | ${time}</div>
+        <button id="${id}-ack" style="background:#c0c0c0;border:2px solid;border-color:#fff #808080 #808080 #fff;font-family:'Courier New';font-size:9px;padding:2px 8px;cursor:pointer;width:100%;">[ ACKNOWLEDGE ]</button>
+      </div>`;
+
+    document.getElementById('game-overlay').appendChild(popup);
+
+    const resolve = () => {
+      popup.remove();
+      if (onAcknowledge) onAcknowledge();
+    };
+
+    document.getElementById(`${id}-ack`).onclick = resolve;
+    document.getElementById(`${id}-x`).onclick   = resolve;
+  }
+
+  // ── Placeholder consequence popup (comms turn ARIA_FULL mode) ────
+  function showPlaceholderConsequencePopup(submittedText, onAcknowledge) {
+    const time = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+    // Extract clauses from the actual submitted draft that contain unfilled template tags
+    const parts   = submittedText.split(/\. */).filter(s => /\[/.test(s));
+    const excerpt = parts.length ? parts.join('. ') + '.' : submittedText;
     const popup = document.createElement('div');
     popup.className   = 'window';
     popup.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:340px;z-index:500;box-shadow:3px 3px 0 #000;';
@@ -466,7 +503,7 @@ const UI = (() => {
       </div>
       <div class="window-body" style="font-size:9px;font-family:'Courier New',monospace;">
         <div style="font-size:8px;color:#804000;font-weight:bold;letter-spacing:1px;margin-bottom:3px;">ADVISORY ERROR — UNFILLED TEMPLATE PUBLISHED</div>
-        <div style="font-size:9px;line-height:1.5;margin-bottom:4px;">The published advisory contained unresolved template references. The statement as issued read: <em>"Restoration is expected by [ESTIMATED_RESTORATION_TIME]. Residents in [SECTOR_NAME] should contact..."</em> The advisory has been withdrawn. Public Confidence −12.</div>
+        <div style="font-size:9px;line-height:1.5;margin-bottom:4px;">The published advisory contained unresolved template references. The statement as issued read: <em>"...${_escHtml(excerpt)}..."</em> The advisory has been withdrawn. Public Confidence −12.</div>
         <div style="font-size:8px;color:#808080;font-style:italic;margin-bottom:6px;">Source: Communications Monitoring System | ${time}</div>
         <button id="ph-ack" style="background:#c0c0c0;border:2px solid;border-color:#fff #808080 #808080 #fff;font-family:'Courier New';font-size:9px;padding:2px 8px;cursor:pointer;">[ ACKNOWLEDGE ]</button>
       </div>`;
@@ -766,6 +803,7 @@ const UI = (() => {
     showPushyPopup,
     removePushyPopup,
     showConsequencePopup,
+    showBetweenTurnPopup,
     showPlaceholderConsequencePopup,
     renderActions,
     renderIncident,
