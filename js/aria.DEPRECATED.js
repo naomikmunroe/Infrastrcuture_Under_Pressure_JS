@@ -1,3 +1,13 @@
+// aria.DEPRECATED.js — DO NOT LOAD
+// This file is superseded by turns.js and ui.js.
+// The pushy popup system (showPushyPopup, handleBetweenTurn, showConsequencePopup)
+// is fully implemented there. This file is retained for reference only and is NOT
+// included in index.html script tags.
+//
+// Known issues that prevented use:
+//   - References document.getElementById('window-popup') which does not exist in the DOM
+//   - Calls Telemetry.logAIPopupDismissed() which does not exist (correct name: logPushyPopupDismissed)
+
 /**
  * aria.js — Pushy condition popup behaviour.
  * Manages the dismissible ARIA recommendation popup for the pushy condition.

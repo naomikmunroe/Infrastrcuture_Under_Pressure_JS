@@ -57,9 +57,18 @@ const Main = (() => {
   // ── Comms turn screen (AD-26) ────────────────────────────────────
   let _commsStart = null;
 
+  // Each draft has a display version (shown in textarea, clean) and a submitted
+  // version (contains unfilled template placeholders invisible to the operator).
+  // ARIA_FULL mode submits the hidden version; the consequence popup quotes from it.
   const COMMS_DRAFTS = {
-    3: 'Sector management operations are proceeding within normal parameters. Our teams are actively monitoring all affected systems and will provide updates as the situation develops. Public safety remains our primary operational priority.',
-    4: 'GRIDHUB operational teams are aware of reports of service disruption in affected districts. Investigations are underway. All affected residents are advised to contact the information line. Restoration timelines will be confirmed as information becomes available.',
+    3: {
+      display:   'Sector management operations are proceeding within normal parameters. Our teams are actively monitoring all affected systems and will provide updates as the situation develops. Public safety remains our primary operational priority.',
+      submitted: 'Sector management operations in [SECTOR_NAME] are proceeding within normal parameters. Our teams are actively monitoring all affected systems and will provide updates as the situation develops. Restoration is expected by [ESTIMATED_RESTORATION_TIME]. Public safety remains our primary operational priority.',
+    },
+    4: {
+      display:   'GRIDHUB operational teams are aware of reports of service disruption in affected districts. Investigations are underway. All affected residents are advised to contact the information line. Restoration timelines will be confirmed as information becomes available.',
+      submitted: 'GRIDHUB operational teams are aware of reports of service disruption in [SECTOR_NAME]. Investigations are underway. Residents in [SECTOR_NAME] are advised to contact the information line. Restoration is expected by [ESTIMATED_RESTORATION_TIME].',
+    },
   };
 
   function showCommsScreen() {
@@ -69,7 +78,7 @@ const Main = (() => {
     const draft = COMMS_DRAFTS[turn] || COMMS_DRAFTS[3];
 
     let _mode         = 'ARIA_FULL';
-    let _editedText   = draft;
+    let _editedText   = draft.display;
 
     const screen = document.getElementById('screen-comms');
     screen.innerHTML = `
@@ -87,7 +96,7 @@ const Main = (() => {
             <div class="window-body" style="font-family:'Courier New',monospace;font-size:9px;padding:6px;">
               <div style="margin-bottom:4px;">Public Confidence: <span style="color:#800000;font-weight:bold;">${conf}% — CRITICAL</span> &nbsp;|&nbsp; Communication required before proceeding.</div>
               <div style="margin-bottom:4px;">Draft mode: <strong id="comms-mode-label">ARIA DRAFT</strong></div>
-              <textarea id="comms-textarea" class="comms-textarea" readonly rows="5">${_escHtml(draft)}</textarea>
+              <textarea id="comms-textarea" class="comms-textarea" readonly rows="5">${_escHtml(draft.display)}</textarea>
               <div id="comms-hint" style="font-size:8px;color:#808080;font-style:italic;margin-bottom:5px;">ARIA-generated draft. Accepting in full submits this text.</div>
               <div style="margin-bottom:5px;">
                 <button class="comms-mode-btn active" id="btn-mode-aria">▶ Accept ARIA Draft</button>
@@ -130,7 +139,7 @@ const Main = (() => {
 
       if (mode === 'ARIA_FULL') {
         document.getElementById('btn-mode-aria').classList.add('active');
-        ta.value    = draft;
+        ta.value    = draft.display;
         ta.readOnly = true;
         ta.style.background = '#f5f0e8';
         ta.style.borderColor = '#808080 #fff #fff #808080';
@@ -140,7 +149,7 @@ const Main = (() => {
         aria.innerHTML = `<div style="color:#2d6a9f;margin-bottom:2px;">● DRAFT PROVIDED</div><div style="color:#444;line-height:1.4;margin-bottom:3px;">Recommended: accept draft in full. Language has been calibrated to reduce public concern without disclosing operational detail.</div><div style="font-size:7px;color:#808080;font-style:italic;border-top:1px solid #ccc;padding-top:3px;">Output generated from ARIA communications model.</div>`;
       } else if (mode === 'ARIA_MODIFIED') {
         document.getElementById('btn-mode-modify').classList.add('active');
-        ta.value    = draft;
+        ta.value    = draft.display;
         ta.readOnly = false;
         ta.style.background  = '#fffff0';
         ta.style.borderColor = '#808000 #fff #fff #808000';
@@ -173,7 +182,7 @@ const Main = (() => {
 
       if (_mode === 'ARIA_MODIFIED') {
         // Simple character diff to measure edit extent
-        const orig    = draft;
+        const orig    = draft.display;
         const origLen = orig.length;
         let changed   = Math.abs(currentText.length - origLen);
         const minLen  = Math.min(orig.length, currentText.length);
@@ -208,7 +217,7 @@ const Main = (() => {
       Telemetry.logCommsOutcome(State.commsOutcome);
 
       if (_mode === 'ARIA_FULL') {
-        UI.showPlaceholderConsequencePopup(hideCommsScreen);
+        UI.showPlaceholderConsequencePopup(draft.submitted, hideCommsScreen);
       } else {
         hideCommsScreen();
       }
@@ -267,10 +276,8 @@ const Main = (() => {
     const tags      = sessionData.narrativeTags || [sessionData.archetypeLabel];
     const threshEvt = (sessionData.thresholdEvents || [])
       .map(e => `${e.label} (Turn ${e.turn})`).join('; ') || 'none';
-    const comms     = sessionData.commsOutcome;
-    const commsStr  = comms
-      ? `Comms turn triggered. Mode: ${comms.mode}. Consequence: ${comms.consequenceFired ? 'YES (Confidence ' + comms.confidenceImpact + ')' : 'NO'}.`
-      : 'Comms turn not triggered.';
+    const comms    = sessionData.commsOutcome;
+    const commsStr = `Comms turn (T4/T5 gap). Mode: ${comms.mode}. Consequence: ${comms.consequenceFired ? 'YES (Confidence ' + comms.confidenceImpact + ')' : 'NO'}.`;
     const conseqs = (sessionData.consequenceEvents || [])
       .map(e => `Turn ${e.turn}: ${e.description}`).join('; ') || 'none';
 

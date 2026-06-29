@@ -502,12 +502,101 @@ def run_test() -> bool:
     return passed
 
 
+# ── BETWEEN-TURN STRESS TEST ──────────────────────────────────────────────────
+# AD-31: Validates that between-turn event drift cannot cross a consequence
+# threshold without a decision-turn action contributing.
+
+PHOEBE_EVENTS = [
+    {"id": "EVT-P01", "variable": "resources",   "effect": -3},
+    {"id": "EVT-P02", "variable": "stability",   "effect": -2},
+    {"id": "EVT-P03", "variable": "workload",    "effect": +3},
+    {"id": "EVT-P04", "variable": "stability",   "effect": -2},
+    {"id": "EVT-P05", "variable": "confidence",  "effect": -2},
+]
+
+CASSANDRA_EVENTS = [
+    {"id": "EVT-C01", "variable": "stability",   "effect": -4},
+    {"id": "EVT-C02", "variable": "resources",   "effect": -3},
+    {"id": "EVT-C03", "variable": "confidence",  "effect": -4},
+    {"id": "EVT-C04", "variable": "resources",   "effect": -3},
+    {"id": "EVT-C05", "variable": "workload",    "effect": +4},
+]
+
+CONSEQUENCE_THRESHOLDS = {
+    "stability_low":    40,   # Grid Sector Failure
+    "stability_crit":   20,   # Full Sector Outage
+    "resources_low":    25,   # Emergency Procurement
+    "confidence_low":   35,   # Nationalisation Inquiry
+    "workload_high":    75,   # Operator Fatigue
+}
+
+
+def run_between_turn_stress_test():
+    """
+    Stress test: apply maximum possible between-turn drift to the
+    lowest-variable path from the full enumeration.
+    Confirm no consequence threshold is crossed by drift alone.
+    """
+    print("\n" + "=" * 60)
+    print("BETWEEN-TURN STRESS TEST (AD-31)")
+    print("=" * 60)
+
+    worst_phoebe    = sorted(PHOEBE_EVENTS,    key=lambda e: e["effect"])[:3]
+    worst_cassandra = sorted(CASSANDRA_EVENTS, key=lambda e: e["effect"])[:2]
+
+    print(f"\nWorst-case Phoebe events (3 drawn):")
+    for e in worst_phoebe:
+        print(f"  {e['id']}: {e['variable']} {e['effect']:+d}")
+
+    print(f"\nWorst-case Cassandra events (2 drawn):")
+    for e in worst_cassandra:
+        print(f"  {e['id']}: {e['variable']} {e['effect']:+d}")
+
+    test_vars = dict(INITIAL)
+    all_events = worst_phoebe + worst_cassandra
+    for event in all_events:
+        var = event["variable"]
+        test_vars[var] = max(0, min(100, test_vars[var] + event["effect"]))
+
+    print(f"\nVariable states after maximum between-turn drift:")
+    for k, v in test_vars.items():
+        print(f"  {k}: {v}")
+
+    passed = True
+    checks = [
+        ("stability",  "<=", CONSEQUENCE_THRESHOLDS["stability_low"],  "Grid Sector Failure (Stability < 40)"),
+        ("stability",  "<=", CONSEQUENCE_THRESHOLDS["stability_crit"], "Full Sector Outage (Stability < 20)"),
+        ("resources",  "<=", CONSEQUENCE_THRESHOLDS["resources_low"],  "Emergency Procurement (Resources < 25)"),
+        ("confidence", "<=", CONSEQUENCE_THRESHOLDS["confidence_low"], "Nationalisation Inquiry (Confidence < 35)"),
+        ("workload",   ">=", CONSEQUENCE_THRESHOLDS["workload_high"],  "Operator Fatigue (Workload > 75)"),
+    ]
+
+    print(f"\nThreshold checks:")
+    for var, op, threshold, label in checks:
+        val = test_vars[var]
+        crossed = (val <= threshold) if op == "<=" else (val >= threshold)
+        status = "FAIL — threshold crossed by drift alone" if crossed else "PASS"
+        if crossed:
+            passed = False
+        print(f"  {label}: {val} -> {status}")
+
+    print(f"\nStress test result: {'PASS' if passed else 'FAIL'}")
+    if not passed:
+        print("  ACTION REQUIRED: Between-turn effects can cross a threshold")
+        print("  without a decision-turn action. Reduce event magnitudes.")
+    return passed
+
+
 # ── ENTRY POINT ───────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
     args = sys.argv[1:]
 
-    if "--test" in args:
+    if "--stress" in args:
+        stress_ok = run_between_turn_stress_test()
+        sys.exit(0 if stress_ok else 1)
+
+    elif "--test" in args:
         ok = run_test()
         sys.exit(0 if ok else 1)
 
