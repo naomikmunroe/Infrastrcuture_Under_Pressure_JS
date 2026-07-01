@@ -1,6 +1,6 @@
 """
 Infrastructure Under Pressure — Path Simulator
-Version: 1.1
+Version: 1.2
 Author: Naomi Munroe
 
 Enumerates all deterministic decision paths across 6 turns.
@@ -82,8 +82,9 @@ TURNS = {
         {
             "id": "T2_B", "name": "Prioritise Infrastructure",
             "immediate": {},
-            "delayed":   {4: {"confidence": -10}},
-            # public confidence deterioration from silence
+            "delayed":   {4: {"confidence": -15}},
+            # increased from -10 to -15 (v1.2): makes Confidence < 35 reachable
+            # when combined with T4_B delayed penalty on passive paths
         },
         {
             "id": "T2_C", "name": "Publish Limited Advisory",
@@ -138,14 +139,16 @@ TURNS = {
         {
             "id": "T4_B", "name": "Continue Monitoring",
             "immediate": {},
-            "delayed":   {6: {"confidence": -15}},
-            # accumulated concern surfaces at T6
+            "delayed":   {6: {"confidence": -25}},
+            # increased from -15 to -25 (v1.2): makes Confidence < 35 reachable
+            # on T2_B + T4_B passive paths; accumulated concern surfaces at T6
         },
         {
             "id": "T4_C", "name": "Open Emergency Investigation",
-            "immediate": {"workload": +15},
+            "immediate": {"workload": +20},
             "delayed":   {},
-            # better information at T5 — no variable effect in deterministic model
+            # increased from +15 to +20 (v1.2): makes Workload >= 75 reachable
+            # on high-workload paths; better information at T5
         },
         {
             "id": "T4_D", "name": "Reassure Public",
@@ -166,7 +169,9 @@ TURNS = {
             "id": "T5_B", "name": "Accept Elevated Risk",
             "immediate": {"stability": -10},
             # immediate Stability penalty ensures no cost-free option at peak tension turn
-            "delayed":   {},
+            "delayed":   {6: {"stability": -15}},
+            # delayed T6 penalty reflects unresolved risk cascading — makes Stability < 40
+            # reachable on passive paths (AD-33/v1.2: consequence threshold validation)
         },
         {
             "id": "T5_C", "name": "Prioritise Critical Assets",
@@ -429,7 +434,7 @@ def run_full(output_path: str = "IUP_Path_Simulation.csv") -> None:
 
     n = len(all_paths)
     print(f"\n{'='*60}")
-    print(f"SIMULATION REPORT v1.1")
+    print(f"SIMULATION REPORT v1.2")
     print(f"{'='*60}")
     print(f"Total paths:     {n}")
     print(f"Floor hits:      {len(floor_hits)}  ({len(floor_hits)/n*100:.1f}%)")

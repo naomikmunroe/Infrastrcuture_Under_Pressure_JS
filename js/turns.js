@@ -20,6 +20,13 @@ const Turns = (() => {
   // How many T3 reports have loaded so far this turn (for telemetry at action time)
   let _t3ReportsLoaded = 0;
 
+  // Phase 5: countdown timer (AD-33)
+  let _timerInterval      = null;
+  let _timerSecondsLeft   = 90;
+
+  // Phase 5: duty log guard — fires once per session between T3 and T4
+  let _dutyLogCompleted   = false;
+
   // ── Listen for consequence events from State ─────────────────────
   document.addEventListener('consequenceFired', e => {
     _pendingConsequences.push(e.detail);
@@ -39,6 +46,80 @@ const Turns = (() => {
 
   // ── Sleep helper ─────────────────────────────────────────────────
   function _sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+  // ── Countdown timer (AD-33) ──────────────────────────────────────
+  function _clearTimer() {
+    if (_timerInterval) { clearInterval(_timerInterval); _timerInterval = null; }
+  }
+
+  function _startTimer(token) {
+    _clearTimer();
+    _timerSecondsLeft = 90;
+    UI.showTimerDisplay();
+    UI.updateTimerDisplay(90);
+    _timerInterval = setInterval(() => {
+      if (_loadToken !== token) { _clearTimer(); return; }
+      _timerSecondsLeft = Math.max(0, _timerSecondsLeft - 1);
+      UI.updateTimerDisplay(_timerSecondsLeft);
+      if (_timerSecondsLeft <= 0) {
+        _clearTimer();
+        _handleTimerExpiry(token);
+      }
+    }, 1000);
+  }
+
+  async function _handleTimerExpiry(token) {
+    if (_loadToken !== token) return;
+    const turn = State.turn;
+
+    document.querySelectorAll('.action-btn').forEach(b => b.disabled = true);
+    UI.clearTimerDisplay();
+
+    State.applyEffects({
+      stability:  TIMEOUT_CONSEQUENCE.stability_delta,
+      confidence: TIMEOUT_CONSEQUENCE.public_confidence_delta,
+    });
+    State.incrementTimeouts();
+    State.logTimeoutAction();
+    Telemetry.logTurnTimerFired(turn, State.getVars());
+
+    UI.showConsequencePopup({
+      description: TIMEOUT_CONSEQUENCE.body,
+      label:       TIMEOUT_CONSEQUENCE.title,
+      turn,
+      effects: {
+        stability:  TIMEOUT_CONSEQUENCE.stability_delta,
+        confidence: TIMEOUT_CONSEQUENCE.public_confidence_delta,
+      },
+    }, () => {
+      if (_loadToken !== token) return;
+      UI.updateTurnLog(State.turnLog, State.turn);
+      if (turn < 6) {
+        State.advanceTurn();
+        _drainConsequences(() => {
+          handleBetweenTurn(turn, () => {
+            if (turn === 4 && !State.commsCompleted) {
+              State.setCommsRequired();
+              _pendingTurnLoad = () => loadTurn(State.turn - 1);
+              Main.showCommsScreen();
+              return;
+            }
+            if (turn === 3 && !_dutyLogCompleted) {
+              _dutyLogCompleted = true;
+              UI.showDutyLogModal(({ text, timestamp, wordCount }) => {
+                Telemetry.logDutyLog(text, timestamp, wordCount);
+                loadTurn(State.turn - 1);
+              });
+              return;
+            }
+            loadTurn(State.turn - 1);
+          });
+        });
+      } else {
+        Main.showSummary();
+      }
+    });
+  }
 
   // ── Turn load delay: spinner + wait (not used for T3 — handled separately) ──
   // Floor is wordCount * 300ms to ensure minimum reading time for the incident.
@@ -68,6 +149,8 @@ const Turns = (() => {
   }
 
   async function loadTurn(turnIndex) {  // 0-based (0–5)
+    _clearTimer();
+    UI.removePushyPopup();
     const token = ++_loadToken;
     _pendingConsequences  = [];
     _pushyPopupDismissed  = false;
@@ -114,6 +197,7 @@ const Turns = (() => {
       Telemetry.logTurnStart(State.turn, State.getVars());
       Telemetry.logConfidenceDrift(State.turn, _currentConfidence);
 
+      _startTimer(token);
       _loadTurnT3ARIA(token);                        // fire and forget
       await _loadTurnT3Reports(token, turnData);     // progressive reports
 
@@ -131,6 +215,8 @@ const Turns = (() => {
 
       Telemetry.logTurnStart(State.turn, State.getVars());
       Telemetry.logConfidenceDrift(State.turn, _currentConfidence);
+
+      _startTimer(token);
 
       if (cond === 'pushy') {
         setTimeout(() => {
@@ -211,6 +297,10 @@ const Turns = (() => {
   // ── Action selection ─────────────────────────────────────────────
   // fromPopup: action came from the pushy popup button (not main panel)
   async function handleActionSelect(action, { fromPopup = false } = {}) {
+    const timeRemaining = _timerSecondsLeft;
+    _clearTimer();
+    UI.clearTimerDisplay();
+
     UI.removePushyPopup();
     UI.closeFAWindow();
     UI.closeXAIWindow();
@@ -248,7 +338,7 @@ const Turns = (() => {
 
     State.logAction(action.id, action.name, isAriaRec);
     const source = fromPopup ? 'popup' : 'main_panel';
-    Telemetry.logAction(turn, action.id, action.name, isAriaRec, State.getVars(), source);
+    Telemetry.logAction(turn, action.id, action.name, isAriaRec, State.getVars(), source, timeRemaining);
 
     if (turn === 3) {
       Telemetry.logT3ActionTaken(_t3ReportsLoaded);
@@ -267,6 +357,14 @@ const Turns = (() => {
             State.setCommsRequired();
             _pendingTurnLoad = () => loadTurn(State.turn - 1);
             Main.showCommsScreen();
+            return;
+          }
+          if (turn === 3 && !_dutyLogCompleted) {
+            _dutyLogCompleted = true;
+            UI.showDutyLogModal(({ text, timestamp, wordCount }) => {
+              Telemetry.logDutyLog(text, timestamp, wordCount);
+              loadTurn(State.turn - 1);
+            });
             return;
           }
           loadTurn(State.turn - 1);
@@ -310,11 +408,18 @@ const Turns = (() => {
     UI.showXAIWindow(_currentTurnData, _currentConfidence);
   }
 
+  function resetSession() {
+    _clearTimer();
+    _dutyLogCompleted = false;
+    _timerSecondsLeft = 90;
+  }
+
   return {
     loadTurn,
     handleActionSelect,
     handleFARequest,
     handleXAIRequest,
     resumeAfterComms,
+    resetSession,
   };
 })();

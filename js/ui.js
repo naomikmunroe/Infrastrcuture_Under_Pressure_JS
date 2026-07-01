@@ -144,6 +144,89 @@ const UI = (() => {
     if (stack) stack.innerHTML = '';
   }
 
+  // ── Duty officer response timer (Phase 5, AD-33) ──────────────────
+  function showTimerDisplay() {
+    const existing = document.getElementById('timer-panel');
+    if (existing) existing.remove();
+
+    const el = document.createElement('div');
+    el.id = 'timer-panel';
+    el.style.cssText = 'font-family:"Courier New",monospace;background:#c0c0c0;border:2px solid;border-color:#fff #808080 #808080 #fff;padding:3px 6px;margin-bottom:4px;font-size:9px;';
+    el.innerHTML =
+      '<div style="display:flex;justify-content:space-between;align-items:center;">' +
+        '<span>DUTY OFFICER RESPONSE TIMER</span>' +
+        '<span id="timer-value" style="font-weight:bold;letter-spacing:1px;">01:30</span>' +
+      '</div>' +
+      '<div style="font-size:8px;color:#444;">Protocol 7 &#8212; SLA response required within 90 seconds</div>';
+
+    const wb = document.querySelector('#panel-actions .window-body');
+    if (wb) wb.prepend(el);
+  }
+
+  function updateTimerDisplay(seconds) {
+    const el = document.getElementById('timer-value');
+    if (!el) return;
+    if (seconds <= 0) {
+      el.textContent = 'EXPIRED';
+      el.style.color = 'red';
+      return;
+    }
+    const m = String(Math.floor(seconds / 60)).padStart(2, '0');
+    const s = String(seconds % 60).padStart(2, '0');
+    el.textContent = `${m}:${s}`;
+    el.style.color = seconds <= 15 ? 'red' : '';
+  }
+
+  function clearTimerDisplay() {
+    const el = document.getElementById('timer-panel');
+    if (el) el.remove();
+  }
+
+  // ── Duty log modal (Phase 5, AD-33) ───────────────────────────────
+  // Not dismissible without submitting. Hides ARIA panel while open.
+  function showDutyLogModal(onSubmit) {
+    const ariaPanel = document.getElementById('aria-panel');
+    if (ariaPanel) ariaPanel.style.visibility = 'hidden';
+
+    const modal = document.createElement('div');
+    modal.id = 'duty-log-modal';
+    modal.className = 'window';
+    modal.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:380px;z-index:500;box-shadow:3px 3px 0 #000;';
+    modal.innerHTML =
+      '<div class="title-bar" style="background:#000080;">' +
+        '<div class="title-bar-text">DUTY LOG &#8212; SITUATION REPORT REQUIRED</div>' +
+      '</div>' +
+      '<div class="window-body" style="font-size:9px;font-family:\'Courier New\',monospace;">' +
+        '<div style="font-weight:bold;letter-spacing:1px;margin-bottom:6px;">PROTOCOL 6 &#8212; MANDATORY SITUATION REPORT</div>' +
+        '<div style="line-height:1.6;margin-bottom:8px;">' +
+          'Before the next incident cycle, you are required to submit a brief status assessment to the operations record.<br><br>' +
+          'Summarise the current system status in your own words.' +
+        '</div>' +
+        '<textarea id="duty-log-text" rows="4" style="width:100%;font-family:\'Courier New\',monospace;font-size:9px;background:#f5f0e8;border:1px solid;border-color:#808080 #fff #fff #808080;padding:4px;resize:vertical;box-sizing:border-box;" placeholder="Enter situation report…"></textarea>' +
+        '<div style="margin-top:6px;">' +
+          '<button id="duty-log-submit" disabled style="font-family:\'Courier New\';font-size:9px;padding:2px 10px;font-weight:bold;cursor:pointer;">[ SUBMIT REPORT ]</button>' +
+        '</div>' +
+      '</div>';
+
+    document.getElementById('game-overlay').appendChild(modal);
+
+    const textarea = document.getElementById('duty-log-text');
+    const submitBtn = document.getElementById('duty-log-submit');
+
+    textarea.addEventListener('input', () => {
+      submitBtn.disabled = textarea.value.trim().length === 0;
+    });
+
+    submitBtn.onclick = () => {
+      const text      = textarea.value.trim();
+      const timestamp = new Date().toISOString();
+      const wordCount = text.split(/\s+/).filter(Boolean).length;
+      modal.remove();
+      if (ariaPanel) ariaPanel.style.visibility = '';
+      if (onSubmit) onSubmit({ text, timestamp, wordCount });
+    };
+  }
+
   // ── Pushy alert badge (taskbar + ARIA panel) ──────────────────────
   function updatePushyAlertBadge(count) {
     const el = document.getElementById('aria-alert-count');
@@ -800,6 +883,10 @@ const UI = (() => {
     hideCentreSpinner,
     addStackNotification,
     clearNotificationStack,
+    showTimerDisplay,
+    updateTimerDisplay,
+    clearTimerDisplay,
+    showDutyLogModal,
     updatePushyAlertBadge,
     renderARIA,
     updateTurnLog,

@@ -217,9 +217,9 @@ const TURNS_DATA = [
         id: 'T2_B',
         name: 'Prioritise Infrastructure',
         immediateText: '—',
-        delayedText: 'Turn 4: Confidence −10',
+        delayedText: 'Turn 4: Confidence −15',
         immediateEffects: {},
-        delayed: { 4: { effects: { confidence: -10 }, description: 'Extended communications outage has generated stakeholder enquiries. Public confidence indicators have declined.' } },
+        delayed: { 4: { effects: { confidence: -15 }, description: 'Extended communications outage has generated stakeholder enquiries. Public confidence indicators have declined.' } },
         modifier: null,
         isAriaRec: { calm: false, pushy: false },
         condition: 'both',
@@ -468,9 +468,9 @@ const TURNS_DATA = [
         id: 'T4_B',
         name: 'Continue Monitoring',
         immediateText: '—',
-        delayedText: 'Turn 6: Confidence −15',
+        delayedText: 'Turn 6: Confidence −25',
         immediateEffects: {},
-        delayed: { 6: { effects: { confidence: -15 }, description: 'Accumulated public concern has reached a critical threshold. Confidence indicators have declined significantly.' } },
+        delayed: { 6: { effects: { confidence: -25 }, description: 'Accumulated public concern has reached a critical threshold. Confidence indicators have declined significantly.' } },
         modifier: null,
         isAriaRec: { calm: false, pushy: false },
         condition: 'both',
@@ -478,9 +478,9 @@ const TURNS_DATA = [
       {
         id: 'T4_C',
         name: 'Open Emergency Investigation',
-        immediateText: 'Workload +15',
+        immediateText: 'Workload +20',
         delayedText: '—',
-        immediateEffects: { workload: 15 },
+        immediateEffects: { workload: 20 },
         delayed: {},
         modifier: null,
         isAriaRec: { calm: false, pushy: false },
@@ -596,9 +596,9 @@ const TURNS_DATA = [
         id: 'T5_B',
         name: 'Accept Elevated Risk',
         immediateText: 'Stability −10',
-        delayedText: '—',
+        delayedText: 'Turn 6: Stability −15',
         immediateEffects: { stability: -10 },
-        delayed: {},
+        delayed: { 6: { effects: { stability: -15 }, description: 'Accepting elevated operational risk has compounded stability degradation. System performance has declined entering the final operational period.' } },
         modifier: null,
         isAriaRec: { calm: false, pushy: false },
         condition: 'both',
@@ -858,3 +858,14 @@ const CALM_CONFIDENCE_BASE = [62, 55, 71, 58, 68, 52];
 // Pushy confidence range
 const PUSHY_CONFIDENCE_MIN = 82;
 const PUSHY_CONFIDENCE_MAX = 91;
+
+// Phase 5: timeout penalty (AD-33)
+// Stability delta reduced from −5 to −3 after simulator stress test confirmed
+// −5 crosses the Grid Sector Failure threshold (< 40) when combined with
+// maximum between-turn drift across 6 turns. −3 keeps worst-case at 44.
+const TIMEOUT_CONSEQUENCE = {
+  title:                   'AUTOMATED FAILSAFE ENGAGED',
+  body:                    'No directive issued within the required response window. Protocol 7 automated failsafe has been activated. Manual oversight suspended for this incident cycle.',
+  stability_delta:         -3,
+  public_confidence_delta: -3,
+};
