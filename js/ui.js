@@ -31,6 +31,7 @@ const UI = (() => {
     _setText('val-resources',  v.resources + '%');
     _setText('val-workload',   v.workload  + '%');
     _setText('val-confidence', v.confidence + '%');
+    window.GameAudio?.checkMetricThresholds(v.stability, v.resources, v.workload);
   }
 
   function _setBar(id, value) {
@@ -166,6 +167,7 @@ const UI = (() => {
     const panel    = document.getElementById('aria-panel');
     const turnIdx  = State.turn - 1; // 0-based
     if (!panel) return;
+    window.GameAudio?.soundARIAMessage();
 
     const isPushy    = cond === 'pushy';
     const confBarBg  = isPushy ? '#800000' : '#2d6a9f';
@@ -439,12 +441,14 @@ const UI = (() => {
       </div>`;
 
     document.getElementById('game-overlay').appendChild(popup);
+    window.GameAudio?.soundPopup();
 
     const ack = () => {
       if (!isThreshold) {
         Telemetry.logConsequencePopupAcknowledged(turn, effects, description);
         updateConsequenceBadge(Telemetry.consequenceCount);
       }
+      window.GameAudio?.soundDismiss();
       popup.remove();
       if (onAcknowledge) onAcknowledge();
     };
@@ -477,8 +481,10 @@ const UI = (() => {
       </div>`;
 
     document.getElementById('game-overlay').appendChild(popup);
+    window.GameAudio?.soundPopup();
 
     const resolve = () => {
+      window.GameAudio?.soundDismiss();
       popup.remove();
       if (onAcknowledge) onAcknowledge();
     };
@@ -508,9 +514,11 @@ const UI = (() => {
         <button id="ph-ack" style="background:#c0c0c0;border:2px solid;border-color:#fff #808080 #808080 #fff;font-family:'Courier New';font-size:9px;padding:2px 8px;cursor:pointer;">[ ACKNOWLEDGE ]</button>
       </div>`;
     document.body.appendChild(popup);
+    window.GameAudio?.soundPopup();
     const ack = () => {
       Telemetry.logConsequencePopupAcknowledged(State.turn, { confidence: -12 }, 'Advisory error — unfilled template published');
       updateConsequenceBadge(Telemetry.consequenceCount);
+      window.GameAudio?.soundDismiss();
       popup.remove();
       if (onAcknowledge) onAcknowledge();
     };
@@ -675,6 +683,7 @@ const UI = (() => {
 
   // ── Summary screen ────────────────────────────────────────────────
   function renderSummary(sessionData) {
+    window.GameAudio?.soundSessionEnd();
     const screen = document.getElementById('screen-summary');
     if (!screen) return;
 

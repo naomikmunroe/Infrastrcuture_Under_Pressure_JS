@@ -104,6 +104,7 @@ const Turns = (() => {
         : State.getPushyConfidence(1);
 
       UI.renderIncidentT3Start(turnData);
+      window.GameAudio?.soundTurnAdvance();
       UI.renderActionsLocked(turnData);
       UI.showARIADegraded(staleConf);
       UI.updateVarBars();
@@ -119,6 +120,7 @@ const Turns = (() => {
     } else {
       // All other turns: spinner delay then full render
       await _turnLoadDelay(turnIndex);
+      window.GameAudio?.soundTurnAdvance();
 
       UI.renderIncident(turnData);
       UI.renderActions(turnData);
@@ -214,6 +216,7 @@ const Turns = (() => {
     UI.closeXAIWindow();
 
     document.querySelectorAll('.action-btn').forEach(b => b.disabled = true);
+    window.GameAudio?.soundActionConfirm();
 
     const cond     = State.condition;
     const isAriaRec = action.isAriaRec[cond];
@@ -283,6 +286,7 @@ const Turns = (() => {
 
   // ── Further Analysis request ─────────────────────────────────────
   function handleFARequest() {
+    window.GameAudio?.soundFurtherAnalysisOpen();
     const turnData = _currentTurnData;
     const turn     = State.turn;
 
