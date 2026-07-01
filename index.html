@@ -306,15 +306,27 @@ html, body { height: 100%; background: #008080; font-family: 'Courier New', mono
 }
 .screening-options {
   display: flex;
-  gap: 10px;
+  gap: 6px;
   flex-wrap: wrap;
 }
 .screening-options label {
   display: flex;
   align-items: center;
-  gap: 3px;
   font-size: 9px;
   cursor: pointer;
+  padding: 2px 8px;
+  background: #c0c0c0;
+  border: 2px solid;
+  border-color: #fff #808080 #808080 #fff;
+  user-select: none;
+}
+.screening-options label:has(input:checked) {
+  background: #000080;
+  color: #fff;
+  border-color: #808080 #fff #fff #808080;
+}
+.screening-options input[type="radio"] {
+  display: none;
 }
 
 /* ── Briefing doc style ──────────────────────────────────────── */

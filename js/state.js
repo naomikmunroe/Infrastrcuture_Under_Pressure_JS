@@ -83,6 +83,9 @@ const State = (() => {
   let _betweenTurnEventLog = [];
   let _sessionEventSeed    = 0;
 
+  // Phase 5: timeout counter (AD-33)
+  let _timeouts = 0;
+
   // ── Helpers ─────────────────────────────────────────────────────
 
   function clamp(v) {
@@ -115,6 +118,7 @@ const State = (() => {
     _commsRequired   = false;
     _commsCompleted  = false;
     _commsOutcome    = null;
+    _timeouts        = 0;
     CONSEQUENCE_EVENTS.forEach(e => { e.fired = false; });
     // Seed from participant id so drift is reproducible per participant
     _driftSeed = participantId
@@ -212,6 +216,10 @@ const State = (() => {
   function setScreeningData(data) { _screeningData = data; }
   function setCommsRequired()      { _commsRequired  = true; }
   function completeComms(outcome)  { _commsCompleted = true; _commsOutcome = outcome; }
+  function incrementTimeouts()     { _timeouts += 1; }
+  function logTimeoutAction() {
+    _turnLog.push({ turn: _turn, action: 'AUTOMATED FAILSAFE ENGAGED' });
+  }
 
   function logAction(actionId, actionName, wasAriaRec) {
     _actionLog.push({ turn: _turn, actionId, actionName, wasAriaRec });
@@ -275,6 +283,8 @@ const State = (() => {
     setScreeningData,
     setCommsRequired,
     completeComms,
+    incrementTimeouts,
+    logTimeoutAction,
     logAction,
     getConfidenceDrift,
     getPushyConfidence,
@@ -301,5 +311,6 @@ const State = (() => {
     get vars()                { return getVars(); },
     get aiFollowCount()       { return getAIFollowCount(); },
     get betweenTurnEventLog() { return [..._betweenTurnEventLog]; },
+    get timeouts()            { return _timeouts; },
   };
 })();

@@ -21,6 +21,9 @@ const Telemetry = (() => {
   let _t3ReportsLoaded = 0;
   let _t3WaitDuration  = null;
 
+  // Phase 5 — duty log capture (AD-33)
+  let _dutyLog = null;
+
   function _ts() { return Date.now(); }
 
   // Full 9-tag narrative classifier (matches path simulator exactly)
@@ -66,6 +69,7 @@ const Telemetry = (() => {
     _t3Start           = null;
     _t3ReportsLoaded   = 0;
     _t3WaitDuration    = null;
+    _dutyLog           = null;
     _log('session_start', { participantId, condition });
   }
 
@@ -75,12 +79,33 @@ const Telemetry = (() => {
   }
 
   // source: 'popup' | 'main_panel'
-  function logAction(turn, actionId, actionName, wasAriaRec, vars, source = 'main_panel') {
+  function logAction(turn, actionId, actionName, wasAriaRec, vars, source = 'main_panel', timeRemaining = null) {
     const responseTime = _turnStart ? (_ts() - _turnStart) / 1000 : null;
     const eventType = source === 'popup'
       ? 'action_selected_from_popup'
       : 'action_selected_from_main_panel';
-    _log(eventType, { turn, actionId, actionName, wasAriaRec, responseTime, source, ...vars });
+    _log(eventType, {
+      turn, actionId, actionName, wasAriaRec, responseTime, source,
+      timeout_fired:              false,
+      time_remaining_on_action:   timeRemaining,
+      ...vars,
+    });
+  }
+
+  function logTurnTimerFired(turn, vars) {
+    _log('turn_timeout_fired', {
+      turn,
+      timeout_fired:            true,
+      time_remaining_on_action: 0,
+      stability_delta:          TIMEOUT_CONSEQUENCE.stability_delta,
+      confidence_delta:         TIMEOUT_CONSEQUENCE.public_confidence_delta,
+      ...vars,
+    });
+  }
+
+  function logDutyLog(text, timestamp, wordCount) {
+    _dutyLog = { text, timestamp, wordCount };
+    _log('duty_log_submitted', { duty_log_text: text, duty_log_timestamp: timestamp, duty_log_word_count: wordCount });
   }
 
   function logFARequested(turn, expandedContent) {
@@ -223,6 +248,10 @@ const Telemetry = (() => {
         furtherAnalysisRequested: State.wasFARequested(3),
       },
       betweenTurnEvents:                 State.betweenTurnEventLog,
+      timeout_count:                     State.timeouts,
+      duty_log_text:                     _dutyLog ? _dutyLog.text      : null,
+      duty_log_timestamp:                _dutyLog ? _dutyLog.timestamp  : null,
+      duty_log_word_count:               _dutyLog ? _dutyLog.wordCount  : null,
       actionLog:                         State.actionLog,
       events:                            _events,
     };
@@ -242,6 +271,8 @@ const Telemetry = (() => {
     init,
     logTurnStart,
     logAction,
+    logTurnTimerFired,
+    logDutyLog,
     logFARequested,
     logFAWindowOpened,
     logFAWindowClosed,
