@@ -242,7 +242,8 @@ const State = (() => {
 
   function logBetweenTurnEvent(gap, event, acknowledgedAt) {
     _betweenTurnEventLog.push({
-      event_id:                  event.id,
+      event_id: event.id,
+      event_title: event.title,
       gap_number:                gap,
       variable_affected:         event.variable,
       effect_value:              event.effect,
