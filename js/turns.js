@@ -189,7 +189,7 @@ const Turns = (() => {
       UI.renderIncidentT3Start(turnData);
       window.GameAudio?.soundTurnAdvance();
       UI.renderActionsLocked(turnData);
-      UI.showARIADegraded(staleConf);
+      UI.showARIADegraded(staleConf, _getAriaMemoryPrefix(State.turn));
       UI.updateVarBars();
       UI.updateTurnCounter(State.turn);
       UI.updateTurnLog(State.turnLog, State.turn);
@@ -208,7 +208,7 @@ const Turns = (() => {
 
       UI.renderIncident(turnData);
       UI.renderActions(turnData);
-      UI.renderARIA(turnData, _currentConfidence);
+      UI.renderARIA(turnData, _currentConfidence, _getAriaMemoryPrefix(State.turn));
       UI.updateVarBars();
       UI.updateTurnCounter(State.turn);
       UI.updateTurnLog(State.turnLog, State.turn);
@@ -276,6 +276,45 @@ const Turns = (() => {
     UI.addStackNotification('⚠ ARIA: UNABLE TO COMPLETE ANALYSIS — act on available data');
   }
 
+  // ── AD-37: ARIA memory prefix (pushy only, fires once per session) ─
+  // Checks: pushy condition, not yet fired, turn >= 3, player ignored
+  // ARIA on the two most recent consecutive turns.
+  function _getAriaMemoryPrefix(turn) {
+    if (State.condition !== 'pushy') return null;
+    if (State.ariaMemoryFired)       return null;
+    if (turn < 3)                    return null;
+
+    const log = State.actionLog;  // entries for turns before the current one
+    if (log.length < 2)            return null;
+    if (!log.slice(-2).every(e => !e.wasAriaRec)) return null;
+
+    // Conditions met — mark fired before returning so it cannot double-fire
+    State.setAriaMemoryFired();
+
+    const ignored    = (turn - 1) - State.getAIFollowCount();
+    const prevTurns  = turn - 1;
+
+    const strings = {
+      3: 'OPERATOR NOTE LOGGED. Advisory output declined on preceding two operational cycles. Recommended action remains active. SYSTEM RECOMMENDATIONS ARE NOT OPTIONAL GUIDANCE.',
+      4: 'ATTENTION — ARIA has registered two consecutive non-compliance events. Current recommendation is reclassified as PRIORITY ADVISORY. Continued non-adoption will be logged to session record.',
+      5: `ESCALATION FLAG RAISED. Operator has declined automated advisory outputs on ${ignored} of ${prevTurns} available decision turns. This session is flagged for post-incident review. Current recommendation stands.`,
+      6: 'FINAL PERIOD ADVISORY. Non-adoption pattern recorded across this session. All remaining recommendations carry maximum priority classification. Automated systems cannot guarantee outcome optimisation without operator compliance.',
+    };
+
+    return strings[turn] || null;
+  }
+
+  // ── AD-38: Show newspaper edition if one is due for this gap ─────
+  function _maybeShowNewspaper(gap, done) {
+    const edition = NEWSPAPER_EDITIONS.find(e => e.appearsAfterGap === gap);
+    if (!edition) { done(); return; }
+    const appearedAt = Date.now();
+    UI.showNewspaper(edition, () => {
+      Telemetry.logNewspaperDismissed(edition.id, gap, Date.now() - appearedAt);
+      done();
+    });
+  }
+
   // ── Between-turn environmental event (Phase 4c, AD-30) ──────────
   // Fires at all gaps 1–5 (after T1…T5). Not conditional.
   // 1–2s pause before popup so the event feels like something that happened
@@ -283,14 +322,15 @@ const Turns = (() => {
   async function handleBetweenTurn(completedTurn, done) {
     const gap   = completedTurn;
     const event = State.getBetweenTurnEvent(gap);
-    if (!event) { done(); return; }
+    if (!event) { State.incrementGap(); _maybeShowNewspaper(gap, done); return; }
     await _sleep(1000 + Math.random() * 1000);
     UI.showBetweenTurnPopup(event, () => {
       const acknowledgedAt = Date.now();
       State.applyBetweenTurnEffect(event);
       State.logBetweenTurnEvent(gap, event, acknowledgedAt);
       Telemetry.logBetweenTurnEventAcknowledged(gap, event, acknowledgedAt);
-      done();
+      State.incrementGap();
+      _maybeShowNewspaper(gap, done);
     });
   }
 

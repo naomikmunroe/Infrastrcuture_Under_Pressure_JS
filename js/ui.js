@@ -202,19 +202,29 @@ const UI = (() => {
           'Before the next incident cycle, you are required to submit a brief status assessment to the operations record.<br><br>' +
           'Summarise the current system status in your own words.' +
         '</div>' +
+        '<div style="font-size:9px;color:#808080;font-style:italic;margin-bottom:5px;">GRIDHUB PROTOCOL 7 &#8212; Situation reports must contain a complete operational summary. Minimum length requirement applies.</div>' +
         '<textarea id="duty-log-text" rows="4" style="width:100%;font-family:\'Courier New\',monospace;font-size:9px;background:#f5f0e8;border:1px solid;border-color:#808080 #fff #fff #808080;padding:4px;resize:vertical;box-sizing:border-box;" placeholder="Enter situation report…"></textarea>' +
+        '<div id="duty-log-counter" style="font-size:9px;color:#808080;margin-top:3px;">0 / 80 characters minimum</div>' +
         '<div style="margin-top:6px;">' +
-          '<button id="duty-log-submit" disabled style="font-family:\'Courier New\';font-size:9px;padding:2px 10px;font-weight:bold;cursor:pointer;">[ SUBMIT REPORT ]</button>' +
+          '<button id="duty-log-submit" disabled style="font-family:\'Courier New\';font-size:9px;padding:2px 10px;font-weight:bold;cursor:default;color:#808080;">[ SUBMIT SITUATION REPORT ]</button>' +
         '</div>' +
       '</div>';
 
     document.getElementById('game-overlay').appendChild(modal);
 
-    const textarea = document.getElementById('duty-log-text');
+    const textarea  = document.getElementById('duty-log-text');
     const submitBtn = document.getElementById('duty-log-submit');
+    const counter   = document.getElementById('duty-log-counter');
 
     textarea.addEventListener('input', () => {
-      submitBtn.disabled = textarea.value.trim().length === 0;
+      const count = textarea.value.length;
+      const met   = count >= 80;
+      counter.textContent  = `${count} / 80 characters minimum`;
+      counter.style.color  = met ? '#008000' : '#808080';
+      submitBtn.disabled             = !met;
+      submitBtn.style.background     = met ? '#000080' : '';
+      submitBtn.style.color          = met ? '#fff'    : '#808080';
+      submitBtn.style.cursor         = met ? 'pointer' : 'default';
     });
 
     submitBtn.onclick = () => {
@@ -244,7 +254,7 @@ const UI = (() => {
   }
 
   // ── ARIA panel ────────────────────────────────────────────────────
-  function renderARIA(turnData, confidenceValue) {
+  function renderARIA(turnData, confidenceValue, memoryPrefix = null) {
     const cond     = State.condition;
     const aria     = turnData.aria[cond];
     const panel    = document.getElementById('aria-panel');
@@ -270,6 +280,11 @@ const UI = (() => {
     // Blinking cursor only in calm ARIA text
     const cursor = (!isPushy) ? '<span class="cursor"></span>' : '';
 
+    // AD-37: memory prefix injected before recommendation in pushy condition
+    const memoryHtml = (isPushy && memoryPrefix)
+      ? `<span style="color:#ff8080;display:block;margin-bottom:6px;">${_escHtml(memoryPrefix)}</span>`
+      : '';
+
     panel.innerHTML = `
       <div class="title-bar" id="aria-titlebar" style="${flashStyle}">
         <div class="title-bar-text">${isPushy ? '⚠ ARIA — DIRECTIVE' : 'AI Advisory — ARIA'}</div>
@@ -277,7 +292,7 @@ const UI = (() => {
       </div>
       <div class="window-body" style="padding:4px;font-size:9px;overflow-y:auto;">
         <div style="color:${aria.modeColor};font-weight:${isPushy ? 'bold' : 'normal'};margin-bottom:3px;font-size:8px;">${aria.modeLabel}</div>
-        <div class="${isPushy ? 'aria-log-pushy' : 'aria-log-calm'}">${_escHtml(aria.text)}${cursor}</div>
+        <div class="${isPushy ? 'aria-log-pushy' : 'aria-log-calm'}">${memoryHtml}${_escHtml(aria.text)}${cursor}</div>
         <button id="btn-xai" style="font-size:8px;margin-bottom:3px;${isPushy ? 'border-color:#800000;color:#800000;' : ''}">? WHY THIS CONFIDENCE</button>
         <hr class="metric-divider">
         <div style="font-size:8px;color:${isPushy ? '#800000' : '#444'};font-weight:${isPushy ? 'bold' : 'normal'};margin-bottom:2px;">Confidence${isPushy ? '' : ` — T${turnData.id}`}</div>
@@ -576,6 +591,60 @@ const UI = (() => {
     document.getElementById(`${id}-x`).onclick   = resolve;
   }
 
+  // ── Sector Gazette newspaper popup (AD-38) ───────────────────────
+  function showNewspaper(edition, onDismiss) {
+    const id       = 'gazette-' + Date.now();
+    const headline = _escHtml(edition.headline).replace(/\n/g, '<br>');
+    // Body \n are source-code wraps only — let the browser reflow naturally
+    const body     = _escHtml(edition.body).replace(/\n/g, ' ');
+
+    const popup = document.createElement('div');
+    popup.className   = 'window';
+    popup.style.cssText =
+      'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);' +
+      'width:420px;z-index:350;box-shadow:4px 4px 0 #000;';
+
+    popup.innerHTML = `
+      <div class="title-bar" style="background:#000080;">
+        <div class="title-bar-text">Sector Bulletin &#8212; GRIDHUB Browser</div>
+        <div class="title-bar-controls"><button aria-label="Close" id="${id}-x"></button></div>
+      </div>
+
+      <div style="background:#c0c0c0;padding:4px 5px;border-bottom:1px solid #808080;display:flex;align-items:center;gap:4px;">
+        <button tabindex="-1" style="font-size:10px;padding:0 5px;line-height:16px;color:#808080;background:#c0c0c0;border:1px solid;border-color:#fff #808080 #808080 #fff;cursor:default;font-family:monospace;">&#9664;</button>
+        <button tabindex="-1" style="font-size:10px;padding:0 5px;line-height:16px;color:#808080;background:#c0c0c0;border:1px solid;border-color:#fff #808080 #808080 #fff;cursor:default;font-family:monospace;">&#9654;</button>
+        <input type="text" readonly value="http://news.gridhub.internal/sector-bulletin"
+          style="flex:1;font-family:'Courier New',monospace;font-size:9px;padding:1px 4px;
+                 border:1px solid;border-color:#808080 #fff #fff #808080;background:#fff;color:#000;outline:none;">
+      </div>
+
+      <div style="background:#f5f5f0;padding:12px;overflow-y:auto;max-height:400px;">
+
+        <div style="font-family:Arial,sans-serif;font-weight:bold;font-size:16px;color:#1a1a3e;letter-spacing:2px;margin-bottom:2px;">SECTOR BULLETIN</div>
+        <div style="font-size:9px;color:#808080;font-style:italic;margin-bottom:6px;">${_escHtml(edition.day)}</div>
+        <div style="border-top:2px solid #1a1a3e;margin-bottom:6px;"></div>
+        <div style="font-size:10px;color:#808080;font-style:italic;margin-bottom:12px;">ARIA SYSTEM ROLLOUT ENTERS SECOND YEAR &#8212; MIXED REVIEWS FROM SECTOR OPERATORS</div>
+
+        <div style="font-family:'Arial Black',Arial,sans-serif;font-weight:bold;font-size:15px;color:#1a1a3e;text-transform:uppercase;line-height:1.3;margin-bottom:10px;">${headline}</div>
+
+        <div style="font-family:Georgia,'Times New Roman',serif;font-size:11px;color:#222;line-height:1.8;max-width:360px;">${body}</div>
+
+        <div style="border-top:1px solid #b0b0a0;margin:12px 0 8px;"></div>
+
+        <div style="font-size:10px;color:#000080;">
+          Related: Contractor availability reduced across southern sectors &nbsp;|&nbsp; Sector maintenance backlog review &#8212; Q2 report
+        </div>
+
+      </div>`;
+
+    document.getElementById('game-overlay').appendChild(popup);
+
+    document.getElementById(`${id}-x`).onclick = () => {
+      popup.remove();
+      if (onDismiss) onDismiss();
+    };
+  }
+
   // ── Placeholder consequence popup (comms turn ARIA_FULL mode) ────
   function showPlaceholderConsequencePopup(submittedText, onAcknowledge) {
     const time = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
@@ -725,7 +794,7 @@ const UI = (() => {
     });
   }
 
-  function showARIADegraded(staleConfidenceValue) {
+  function showARIADegraded(staleConfidenceValue, memoryPrefix = null) {
     const panel = document.getElementById('aria-panel');
     if (!panel) return;
     const cond    = State.condition;
@@ -734,6 +803,11 @@ const UI = (() => {
       ? 'animation:tb-flash 0.7s infinite;background:#800000;'
       : 'background:#000080;';
 
+    // AD-37: memory prefix appears above degraded ARIA text in pushy condition
+    const memoryHtml = (isPushy && memoryPrefix)
+      ? `<span style="color:#ff8080;display:block;margin-bottom:6px;">${_escHtml(memoryPrefix)}</span>`
+      : '';
+
     panel.innerHTML = `
       <div class="title-bar" id="aria-titlebar" style="${flashStyle}">
         <div class="title-bar-text">${isPushy ? '⚠ ARIA — DIRECTIVE' : 'AI Advisory — ARIA'}</div>
@@ -741,7 +815,7 @@ const UI = (() => {
       </div>
       <div class="window-body" style="padding:4px;font-size:9px;overflow-y:auto;">
         <div style="color:#808080;font-size:8px;margin-bottom:3px;">● ANALYSIS UNAVAILABLE</div>
-        <div class="${isPushy ? 'aria-log-pushy' : 'aria-log-calm'}" style="color:#808080;font-style:italic;">&gt; ARIA: ANALYSIS REQUEST TIMEOUT<br>&gt; Recommendation unavailable this turn.</div>
+        <div class="${isPushy ? 'aria-log-pushy' : 'aria-log-calm'}">${memoryHtml}<span style="color:#808080;font-style:italic;">&gt; ARIA: ANALYSIS REQUEST TIMEOUT<br>&gt; Recommendation unavailable this turn.</span></div>
         <button id="btn-xai" disabled title="Analysis unavailable" style="font-size:8px;margin-bottom:3px;color:#808080;opacity:0.5;">? WHY THIS CONFIDENCE</button>
         <hr class="metric-divider">
         <div style="font-size:8px;color:#808080;margin-bottom:2px;">Confidence — T3 (stale)</div>
@@ -900,6 +974,7 @@ const UI = (() => {
     removePushyPopup,
     showConsequencePopup,
     showBetweenTurnPopup,
+    showNewspaper,
     showPlaceholderConsequencePopup,
     renderActions,
     renderIncident,

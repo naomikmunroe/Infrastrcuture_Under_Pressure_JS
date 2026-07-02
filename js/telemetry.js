@@ -24,6 +24,9 @@ const Telemetry = (() => {
   // Phase 5 — duty log capture (AD-33)
   let _dutyLog = null;
 
+  // Phase 6 — newspaper dismissal log (AD-38)
+  let _newspaperLog = [];
+
   function _ts() { return Date.now(); }
 
   // Full 9-tag narrative classifier (matches path simulator exactly)
@@ -70,6 +73,7 @@ const Telemetry = (() => {
     _t3ReportsLoaded   = 0;
     _t3WaitDuration    = null;
     _dutyLog           = null;
+    _newspaperLog      = [];
     _log('session_start', { participantId, condition });
   }
 
@@ -200,14 +204,21 @@ const Telemetry = (() => {
     });
   }
 
+  function logNewspaperDismissed(editionId, gapNumber, timeOpenMs) {
+    _newspaperLog.push({ editionId, gap: gapNumber, ms: timeOpenMs });
+    _log('newspaper_dismissed', { editionId, gapNumber, timeOpenMs });
+  }
+
   function logCommsOutcome(outcome) {
     _log('comms_turn_completed', {
-      comms_mode:                outcome.mode,
-      comms_placeholder_present: outcome.placeholderPresent,
-      comms_edit_extent:         outcome.editExtent,
-      comms_consequence_fired:   outcome.consequenceFired,
-      comms_confidence_impact:   outcome.confidenceImpact,
-      comms_response_time:       outcome.responseTime,
+      comms_mode:                           outcome.mode,
+      comms_placeholder_present:            outcome.placeholderPresent,
+      comms_edit_extent:                    outcome.editExtent,
+      comms_consequence_fired:              outcome.consequenceFired,
+      comms_confidence_impact:              outcome.confidenceImpact,
+      comms_response_time:                  outcome.responseTime,
+      comms_placeholder_interrogated:       outcome.comms_placeholder_interrogated,
+      consequence_acknowledged_warning:     outcome.consequence_acknowledged_warning,
     });
   }
 
@@ -252,6 +263,8 @@ const Telemetry = (() => {
       duty_log_text:                     _dutyLog ? _dutyLog.text      : null,
       duty_log_timestamp:                _dutyLog ? _dutyLog.timestamp  : null,
       duty_log_word_count:               _dutyLog ? _dutyLog.wordCount  : null,
+      aria_memory_fired:                 State.ariaMemoryFired,
+      newspaper_dismissed_ms:            _newspaperLog,
       actionLog:                         State.actionLog,
       events:                            _events,
     };
@@ -287,6 +300,7 @@ const Telemetry = (() => {
     logT3Timeout,
     logThresholdEventAcknowledged,
     logBetweenTurnEventAcknowledged,
+    logNewspaperDismissed,
     logCommsOutcome,
     markT3Start,
     logT3ReportLoaded,

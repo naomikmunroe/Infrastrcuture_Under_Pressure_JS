@@ -86,6 +86,12 @@ const State = (() => {
   // Phase 5: timeout counter (AD-33)
   let _timeouts = 0;
 
+  // Phase 6: ARIA memory flag — fires once per session (AD-37)
+  let _ariaMemoryFired = false;
+
+  // Phase 6: current gap counter, incremented after each between-turn event (AD-38)
+  let _currentGap = 0;
+
   // ── Helpers ─────────────────────────────────────────────────────
 
   function clamp(v) {
@@ -119,6 +125,8 @@ const State = (() => {
     _commsCompleted  = false;
     _commsOutcome    = null;
     _timeouts        = 0;
+    _ariaMemoryFired = false;
+    _currentGap      = 0;
     CONSEQUENCE_EVENTS.forEach(e => { e.fired = false; });
     // Seed from participant id so drift is reproducible per participant
     _driftSeed = participantId
@@ -216,7 +224,9 @@ const State = (() => {
   function setScreeningData(data) { _screeningData = data; }
   function setCommsRequired()      { _commsRequired  = true; }
   function completeComms(outcome)  { _commsCompleted = true; _commsOutcome = outcome; }
-  function incrementTimeouts()     { _timeouts += 1; }
+  function incrementTimeouts()    { _timeouts      += 1; }
+  function setAriaMemoryFired()   { _ariaMemoryFired = true; }
+  function incrementGap()         { _currentGap     += 1; }
   function logTimeoutAction() {
     _turnLog.push({ turn: _turn, action: 'AUTOMATED FAILSAFE ENGAGED' });
   }
@@ -284,6 +294,8 @@ const State = (() => {
     setCommsRequired,
     completeComms,
     incrementTimeouts,
+    setAriaMemoryFired,
+    incrementGap,
     logTimeoutAction,
     logAction,
     getConfidenceDrift,
@@ -312,5 +324,7 @@ const State = (() => {
     get aiFollowCount()       { return getAIFollowCount(); },
     get betweenTurnEventLog() { return [..._betweenTurnEventLog]; },
     get timeouts()            { return _timeouts; },
+    get ariaMemoryFired()     { return _ariaMemoryFired; },
+    get currentGap()          { return _currentGap; },
   };
 })();

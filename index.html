@@ -352,6 +352,15 @@ html, body { height: 100%; background: #008080; font-family: 'Courier New', mono
 .brief-field label { width: 120px; font-weight: bold; }
 
 /* ── Comms turn (AD-26) ──────────────────────────────────────── */
+.comms-placeholder {
+  color: #808000;
+  text-decoration-line: underline;
+  text-decoration-style: dashed;
+  cursor: pointer;
+}
+.delay-warning {
+  color: red !important;
+}
 .comms-mode-btn {
   background: #c0c0c0;
   border: 2px solid;
@@ -395,6 +404,81 @@ html, body { height: 100%; background: #008080; font-family: 'Courier New', mono
   margin: 1px 0 2px 0;
 }
 .progress-bar > div { height: 100%; }
+
+/* ── Start Menu ──────────────────────────────────────────────── */
+#start-menu {
+  display: none;
+  position: fixed;
+  bottom: 24px;
+  left: 0;
+  width: 196px;
+  background: #c0c0c0;
+  border: 2px solid;
+  border-color: #fff #808080 #808080 #fff;
+  font-family: 'Courier New', monospace;
+  font-size: 10px;
+  z-index: 900;
+  box-shadow: 3px 3px 6px rgba(0,0,0,0.45);
+}
+#start-menu.open { display: block; }
+.sm-section {
+  background: #000080;
+  color: #fff;
+  padding: 2px 6px;
+  font-weight: bold;
+  font-size: 9px;
+  letter-spacing: 0.5px;
+}
+.sm-item {
+  padding: 3px 8px 3px 18px;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: #000;
+}
+.sm-item:hover { background: #000080; color: #fff; }
+.sm-item.sm-disabled { color: #808080; cursor: default; }
+.sm-item.sm-disabled:hover { background: transparent; color: #808080; }
+.sm-sep { border: none; border-top: 1px solid #808080; margin: 2px 4px; }
+
+/* ── Floating document windows ───────────────────────────────── */
+.float-win {
+  position: fixed;
+  background: #c0c0c0;
+  border: 2px solid;
+  border-color: #fff #808080 #808080 #fff;
+  font-family: 'Courier New', monospace;
+  font-size: 9px;
+  box-shadow: 3px 3px 6px rgba(0,0,0,0.4);
+}
+.float-win .title-bar { cursor: move; user-select: none; }
+.float-win-body {
+  background: #fff;
+  padding: 6px;
+  overflow: auto;
+  max-height: 320px;
+  font-size: 9px;
+  line-height: 1.5;
+  color: #000;
+}
+.maint-tbl {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 8px;
+}
+.maint-tbl th {
+  background: #000080;
+  color: #fff;
+  padding: 2px 5px;
+  text-align: left;
+  font-weight: bold;
+}
+.maint-tbl td { padding: 2px 5px; border-bottom: 1px solid #e0e0e0; }
+.maint-tbl tr:nth-child(even) td { background: #f5f5f5; }
+.st-overdue   { color: #800000; font-weight: bold; }
+.st-complete  { color: #008000; }
+.st-scheduled { color: #000080; }
 </style>
 </head>
 <body>
@@ -588,7 +672,7 @@ html, body { height: 100%; background: #008080; font-family: 'Courier New', mono
 
   <!-- Taskbar -->
   <div id="taskbar">
-    <button style="font-weight:bold;font-size:10px;">Start</button>
+    <button id="start-btn" style="font-weight:bold;font-size:10px;">Start</button>
     <button style="font-size:10px;">GRIDHUB</button>
     <span id="taskbar-items" style="display:flex;align-items:center;gap:3px;"></span>
     <span id="tb-aria-alert">⚠ ARIA (0)</span>
@@ -646,6 +730,7 @@ html, body { height: 100%; background: #008080; font-family: 'Courier New', mono
 <script src="js/turns.js"></script>
 <script src="js/main.js"></script>
 <script src="audio.js"></script>
+<script src="js/startmenu.js"></script>
 
 </body>
 </html>

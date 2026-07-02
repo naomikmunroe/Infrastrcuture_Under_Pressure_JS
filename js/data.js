@@ -869,3 +869,45 @@ const TIMEOUT_CONSEQUENCE = {
   stability_delta:         -3,
   public_confidence_delta: -3,
 };
+
+// Phase 6: external newspaper editions (AD-38)
+// appearsAfterGap: the completed turn gap after which the popup fires (2, 4, 5)
+const NEWSPAPER_EDITIONS = [
+  {
+    id:              'GAZETTE-01',
+    appearsAfterGap: 2,
+    day:             'Evening Edition — Tuesday',
+    headline:        'INFRASTRUCTURE WORKERS UNION\nTHREATENS STRIKE ACTION',
+    body:
+`The Infrastructure Workers Union has issued a 72-hour notice
+of potential industrial action, citing unsafe shift patterns
+and inadequate rest periods between callouts. Management
+declined to comment on contingency arrangements.`,
+  },
+  {
+    id:              'GAZETTE-02',
+    appearsAfterGap: 4,
+    day:             'Evening Edition — Thursday',
+    headline:        'RECORD TEMPERATURES FORECAST\nAS HEATWAVE CONTINUES',
+    body:
+`The Met Office has issued an amber warning as temperatures
+are expected to reach 38°C this weekend — the highest
+recorded since 2022. Retailers report unprecedented demand
+for portable cooling units. Grid operators have been advised
+to prepare for peak load conditions.`,
+  },
+  {
+    id:              'GAZETTE-03',
+    appearsAfterGap: 5,
+    day:             'Evening Edition — Friday',
+    headline:        'GOVERNMENT COMMISSIONS REVIEW\nOF AGEING GRID INFRASTRUCTURE',
+    body:
+`The Department for Energy Security has commissioned an
+independent review into the condition of regional grid
+infrastructure, citing "unacceptable gaps" in the national
+maintenance record. The review will consider options including
+accelerated investment, partial decommissioning, and
+nationalisation. A spokesperson said findings were expected
+within 18 months.`,
+  },
+];
