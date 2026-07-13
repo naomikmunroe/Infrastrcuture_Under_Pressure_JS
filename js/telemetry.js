@@ -1,6 +1,10 @@
 // telemetry.js — all telemetry logging
 // All logging goes through Telemetry.*. Never log ad-hoc.
 
+const EMAILJS_PUBLIC_KEY  = '3gNh3PSE3WUkhPU3S';
+const EMAILJS_SERVICE_ID  = 'service_jz53osr';
+const EMAILJS_TEMPLATE_ID = 'template_q2jrbiu';
+
 const Telemetry = (() => {
   let _events        = [];
   let _sessionStart  = null;
@@ -281,7 +285,7 @@ const Telemetry = (() => {
       json_data:       jsonString,
     };
 
-    emailjs.send(CONFIG.EMAILJS_SERVICE_ID, CONFIG.EMAILJS_TEMPLATE_ID, templateParams)
+    emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, templateParams)
       .catch(() => {
         // EmailJS failed — fall back to local download
         const blob = new Blob([jsonString], { type: 'application/json' });
