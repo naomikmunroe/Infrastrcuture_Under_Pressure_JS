@@ -86,6 +86,8 @@ const State = (() => {
   // Phase 5: timeout counter (AD-33)
   let _timeouts = 0;
 
+  let _sessionNumber = 1;
+
   // Phase 6: ARIA memory flag — fires once per session (AD-37)
   let _ariaMemoryFired = false;
 
@@ -106,9 +108,10 @@ const State = (() => {
 
   // ── Public API ───────────────────────────────────────────────────
 
-  function init(condition, participantId) {
+  function init(condition, participantId, sessionNumber = 1) {
     _condition     = condition;
     _participantId = participantId;
+    _sessionNumber = sessionNumber;
     _turn          = 1;
     _stability     = 70;
     _resources     = 70;
@@ -309,6 +312,7 @@ const State = (() => {
     logBetweenTurnEvent,
     get condition()           { return _condition; },
     get participantId()       { return _participantId; },
+    get sessionNumber()       { return _sessionNumber; },
     get turn()                { return _turn; },
     get stability()           { return _stability; },
     get resources()           { return _resources; },

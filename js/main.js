@@ -301,11 +301,12 @@ const Main = (() => {
   }
 
   function startSession() {
-    const pid  = document.getElementById('input-pid').value.trim() || 'UNKNOWN';
-    const cond = document.getElementById('select-condition').value;
+    const pid           = document.getElementById('input-pid').value.trim() || 'UNKNOWN';
+    const cond          = document.getElementById('select-condition').value;
+    const sessionNumber = parseInt(document.getElementById('input-session').value, 10);
 
     window.GameAudio?.resetMetricWarnings();
-    State.init(cond, pid);
+    State.init(cond, pid, sessionNumber);
     Telemetry.init(pid, cond);
     Turns.resetSession();
 

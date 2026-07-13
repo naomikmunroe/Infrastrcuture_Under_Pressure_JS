@@ -237,6 +237,7 @@ const Telemetry = (() => {
     const session = {
       participant_id:                    State.participantId,
       condition:                         State.condition,
+      session_number:                    State.sessionNumber,
       session_start:                     _sessionStart,
       session_end:                       _ts(),
       screeningData:                     State.screeningData,
