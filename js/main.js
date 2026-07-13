@@ -445,11 +445,35 @@ const Main = (() => {
       .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
 
+  // ── URL parameter pre-filling ────────────────────────────────────
+  function readURLParams() {
+    const params    = new URLSearchParams(window.location.search);
+    const pid       = params.get('pid');
+    const sessionNo = params.get('session');
+    if (!pid || !sessionNo) return null;
+
+    const pidNum    = parseInt(pid.replace('P', ''));
+    const calmFirst = pidNum % 2 !== 0;
+    const sessNum   = parseInt(sessionNo);
+    const condition = calmFirst
+      ? (sessNum === 1 ? 'calm'  : 'pushy')
+      : (sessNum === 1 ? 'pushy' : 'calm');
+
+    return { pid, sessionNumber: sessNum, condition };
+  }
+
   // ── Boot ─────────────────────────────────────────────────────────
   function boot() {
     showScreen('screen-screening');
     initScreening();
     initBriefing();
+
+    const prefill = readURLParams();
+    if (prefill) {
+      document.getElementById('input-pid').value          = prefill.pid;
+      document.getElementById('select-condition').value   = prefill.condition;
+      document.getElementById('input-session').value      = prefill.sessionNumber;
+    }
   }
 
   return {
