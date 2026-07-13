@@ -417,16 +417,23 @@ const Main = (() => {
     if (btns) btns.style.display = 'flex';
   }
 
-  // ── Questionnaire redirect (Task 7) ──────────────────────────────
+  // ── Questionnaire redirect ────────────────────────────────────────
+  const FORM_A_URL = 'https://forms.cloud.microsoft/Pages/ResponsePage.aspx?id=VZbi7ZfQ5EK7tfONQn-_uD3hdrGSRBtBoTwoBCAQHNFUMVg1U1c0N1NYV0hYRDE4WU0wNUJZNkxFRi4u';
+
   function proceedToQuestionnaire() {
-    const pid  = State.participantId;
-    const cond = State.condition;
-    // TODO: replace before recruitment — set to actual Qualtrics/Google Forms URL
-    const surveyBase = 'https://SURVEY_URL_HERE';
-    const url = `${surveyBase}?pid=${encodeURIComponent(pid)}&condition=${encodeURIComponent(cond)}`;
-    const w = window.open(url, '_blank');
-    if (!w) {
-      alert('Please navigate to the questionnaire link provided by the researcher.');
+    const url = FORM_A_URL
+      + `&ra4d8ac4708de4b749411a455dad88b5d=${encodeURIComponent(State.participantId)}`
+      + `&r79cf7edd4edc475182eb9eccb13ab04d=${encodeURIComponent(State.condition)}`
+      + `&r243b8c7c9d614ad3af0cd923b4d07ef0=${encodeURIComponent(State.sessionNumber)}`;
+
+    const opened = window.open(url, '_blank');
+    if (!opened) {
+      const link = document.createElement('a');
+      link.href = url;
+      link.target = '_blank';
+      link.textContent = '▶ Click here to open the questionnaire';
+      link.style.cssText = 'display:block;margin:10px 0;font-size:12px;color:#000080;';
+      document.getElementById('vignette-buttons')?.appendChild(link);
     }
   }
 
