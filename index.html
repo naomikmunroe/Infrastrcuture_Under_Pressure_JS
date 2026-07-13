@@ -723,6 +723,7 @@ html, body { height: 100%; background: #008080; font-family: 'Courier New', mono
 <!-- ══════════════════════════════════════════════════════════════ -->
 <!-- SCRIPTS — load order matters                                  -->
 <!-- ══════════════════════════════════════════════════════════════ -->
+<script src="config.js"></script>
 <script src="js/data.js"></script>
 <script src="js/state.js"></script>
 <script src="js/telemetry.js"></script>
@@ -731,6 +732,8 @@ html, body { height: 100%; background: #008080; font-family: 'Courier New', mono
 <script src="js/main.js"></script>
 <script src="audio.js"></script>
 <script src="js/startmenu.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<script>emailjs.init(CONFIG.EMAILJS_PUBLIC_KEY);</script>
 
 </body>
 </html>

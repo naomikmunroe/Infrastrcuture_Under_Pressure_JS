@@ -269,13 +269,29 @@ const Telemetry = (() => {
       events:                            _events,
     };
 
-    const blob = new Blob([JSON.stringify(session, null, 2)], { type: 'application/json' });
-    const url  = URL.createObjectURL(blob);
-    const a    = document.createElement('a');
-    a.href     = url;
-    a.download = `iup_session_${State.participantId || 'unknown'}_${Date.now()}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
+    const jsonString  = JSON.stringify(session, null, 2);
+    const sessionEnd  = new Date(session.session_end).toISOString();
+
+    const templateParams = {
+      participant_id:  session.participant_id || 'unknown',
+      condition:       session.condition      || 'unknown',
+      session_end:     sessionEnd,
+      system_collapse: String(session.systemCollapse),
+      narrative_tags:  session.narrativeTags.join(', '),
+      json_data:       jsonString,
+    };
+
+    emailjs.send(CONFIG.EMAILJS_SERVICE_ID, CONFIG.EMAILJS_TEMPLATE_ID, templateParams)
+      .catch(() => {
+        // EmailJS failed — fall back to local download
+        const blob = new Blob([jsonString], { type: 'application/json' });
+        const url  = URL.createObjectURL(blob);
+        const a    = document.createElement('a');
+        a.href     = url;
+        a.download = `iup_session_${session.participant_id || 'unknown'}_${Date.now()}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+      });
 
     return session;
   }
