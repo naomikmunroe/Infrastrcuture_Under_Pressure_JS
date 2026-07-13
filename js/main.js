@@ -2,7 +2,7 @@
 
 const CONFIG = {
   // Set your Anthropic API key here before running sessions.
-  anthropicApiKey: '',
+    anthropicApiKey: '',
 };
 
 const Main = (() => {
