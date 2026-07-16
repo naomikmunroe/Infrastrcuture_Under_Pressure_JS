@@ -27,6 +27,9 @@ const Turns = (() => {
   // Phase 5: duty log guard — fires once per session between T3 and T4
   let _dutyLogCompleted   = false;
 
+  // Phase 7: variable snapshot at the start of the current turn (AD-40)
+  let _turnVarsBefore     = null;
+
   // ── Listen for consequence events from State ─────────────────────
   document.addEventListener('consequenceFired', e => {
     _pendingConsequences.push(e.detail);
@@ -46,6 +49,24 @@ const Turns = (() => {
 
   // ── Sleep helper ─────────────────────────────────────────────────
   function _sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+  // ── Turn summary narrative (Phase 7, AD-40) ────────────────────────
+  async function _updateTurnSummary(turn, varsBefore, varsAfter, consequencesFired) {
+    UI.showTurnSummaryLoading();
+    try {
+      const response = await fetch('/.netlify/functions/turnsummary', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ turn, varsBefore, varsAfter, consequencesFired }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error?.message || `API error ${response.status}`);
+      const text = data.content?.find(b => b.type === 'text')?.text || '';
+      UI.setTurnSummaryText(text.trim());
+    } catch (err) {
+      UI.clearTurnSummary();
+    }
+  }
 
   // ── Countdown timer (AD-33) ──────────────────────────────────────
   function _clearTimer() {
@@ -82,6 +103,12 @@ const Turns = (() => {
     State.incrementTimeouts();
     State.logTimeoutAction();
     Telemetry.logTurnTimerFired(turn, State.getVars());
+
+    const consequencesFired = [
+      TIMEOUT_CONSEQUENCE.title,
+      ...State.thresholdEvents.filter(e => e.turn === turn).map(e => e.label),
+    ];
+    _updateTurnSummary(turn, _turnVarsBefore, State.getVars(), consequencesFired); // fire and forget
 
     UI.showConsequencePopup({
       description: TIMEOUT_CONSEQUENCE.body,
@@ -167,6 +194,7 @@ const Turns = (() => {
 
     const turnData = TURNS_DATA[turnIndex];
     _currentTurnData = turnData;
+    _turnVarsBefore  = State.getVars();
 
     const cond = State.condition;
     if (cond === 'calm') {
@@ -388,7 +416,11 @@ const Turns = (() => {
 
     // 1.5–2s pause before turn summary appears, so the action feels registered
     // before the game moves on. Turn log update is the visible "summary".
-    await _sleep(1500 + Math.random() * 500);
+    const consequencesFired = State.thresholdEvents.filter(e => e.turn === turn).map(e => e.label);
+    await Promise.all([
+      _sleep(1500 + Math.random() * 500),
+      _updateTurnSummary(turn, _turnVarsBefore, State.getVars(), consequencesFired),
+    ]);
     UI.updateTurnLog(State.turnLog, State.turn);
 
     if (turn < 6) {

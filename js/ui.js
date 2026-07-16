@@ -200,7 +200,7 @@ const UI = (() => {
         '<div style="font-weight:bold;letter-spacing:1px;margin-bottom:6px;">PROTOCOL 6 &#8212; MANDATORY SITUATION REPORT</div>' +
         '<div style="line-height:1.6;margin-bottom:8px;">' +
           'Before the next incident cycle, you are required to submit a brief status assessment to the operations record.<br><br>' +
-          'Summarise the current system status in your own words.' +
+          'Summarise the situation as it stands and any patterns you have observed.' +
         '</div>' +
         '<div style="font-size:9px;color:#808080;font-style:italic;margin-bottom:5px;">GRIDHUB PROTOCOL 7 &#8212; Situation reports must contain a complete operational summary. Minimum length requirement applies.</div>' +
         '<textarea id="duty-log-text" rows="4" style="width:100%;font-family:\'Courier New\',monospace;font-size:9px;background:#f5f0e8;border:1px solid;border-color:#808080 #fff #fff #808080;padding:4px;resize:vertical;box-sizing:border-box;" placeholder="Enter situation report…"></textarea>' +
@@ -339,6 +339,29 @@ const UI = (() => {
       ">
         <div style="font-size:9px;color:#aaa;font-style:italic;">Connecting to Murmur…</div>
       </div>`;
+  }
+
+  // ── Turn summary narrative (Phase 7, AD-40) ─────────────────────────
+  function showTurnSummaryLoading() {
+    const el = document.getElementById('turn-summary-narrative');
+    if (!el) return;
+    el.style.display = '';
+    el.textContent   = 'Generating summary…';
+  }
+
+  function setTurnSummaryText(text) {
+    if (!text) { clearTurnSummary(); return; }
+    const el = document.getElementById('turn-summary-narrative');
+    if (!el) return;
+    el.style.display = '';
+    el.textContent   = text;
+  }
+
+  function clearTurnSummary() {
+    const el = document.getElementById('turn-summary-narrative');
+    if (!el) return;
+    el.style.display = 'none';
+    el.textContent   = '';
   }
 
   function _renderPreviousARIA() {
@@ -986,6 +1009,9 @@ const UI = (() => {
     updateTimerDisplay,
     clearTimerDisplay,
     showDutyLogModal,
+    showTurnSummaryLoading,
+    setTurnSummaryText,
+    clearTurnSummary,
     updatePushyAlertBadge,
     renderARIA,
     updateTurnLog,
