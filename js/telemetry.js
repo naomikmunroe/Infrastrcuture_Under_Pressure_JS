@@ -213,6 +213,14 @@ const Telemetry = (() => {
     _log('newspaper_dismissed', { editionId, gapNumber, timeOpenMs });
   }
 
+  function logMurmurPosts(turn, posts, vars) {
+    _log('murmur_posts_generated', {
+      turn,
+      posts, // array of {username, time, text}
+      vars_snapshot: { ...vars },
+    });
+  }
+
   function logCommsOutcome(outcome) {
     _log('comms_turn_completed', {
       comms_mode:                           outcome.mode,
@@ -271,6 +279,8 @@ const Telemetry = (() => {
       aria_memory_fired:                 State.ariaMemoryFired,
       newspaper_dismissed_ms:            _newspaperLog,
       actionLog:                         State.actionLog,
+      murmurLog:                         _events.filter(e => e.type === 'murmur_posts_generated')
+                                            .map(e => ({ turn: e.turn, posts: e.posts })),
       events:                            _events,
     };
 
@@ -322,6 +332,7 @@ const Telemetry = (() => {
     logThresholdEventAcknowledged,
     logBetweenTurnEventAcknowledged,
     logNewspaperDismissed,
+    logMurmurPosts,
     logCommsOutcome,
     markT3Start,
     logT3ReportLoaded,

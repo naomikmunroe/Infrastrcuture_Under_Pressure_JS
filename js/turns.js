@@ -197,6 +197,7 @@ const Turns = (() => {
       Telemetry.logTurnStart(State.turn, State.getVars());
       Telemetry.logConfidenceDrift(State.turn, _currentConfidence);
 
+      Murmur.loadTurn(turnIndex);                     // fire and forget
       _startTimer(token);
       _loadTurnT3ARIA(token);                        // fire and forget
       await _loadTurnT3Reports(token, turnData);     // progressive reports
@@ -216,6 +217,7 @@ const Turns = (() => {
       Telemetry.logTurnStart(State.turn, State.getVars());
       Telemetry.logConfidenceDrift(State.turn, _currentConfidence);
 
+      Murmur.loadTurn(turnIndex);                     // fire and forget
       _startTimer(token);
 
       if (cond === 'pushy') {

@@ -309,6 +309,7 @@ const UI = (() => {
         <div class="${isPushy ? 'aria-limitations-pushy' : 'aria-limitations-calm'}">
           ARIA analysis may be incomplete or based on inaccurate inputs. All decisions remain the responsibility of the duty operator.
         </div>
+        ${_murmurPanelHTML()}
       </div>`;
 
     document.getElementById('btn-xai').onclick = () => Turns.handleXAIRequest();
@@ -316,6 +317,28 @@ const UI = (() => {
     // Restore badges after re-render
     updateConsequenceBadge(Telemetry.consequenceCount);
     updatePushyAlertBadge(Telemetry.pushyAlertCount);
+    Murmur.mount();
+  }
+
+  // ── Murmur panel markup (Phase 7, AD-39) ────────────────────────────
+  // Appended below the ARIA limitations footer in both renderARIA() and
+  // showARIADegraded() — deliberately off-register from the Win98 chrome.
+  function _murmurPanelHTML() {
+    return `
+      <hr style="margin:8px 2px;border-color:#ddd;">
+      <div class="title-bar" style="margin-top:2px;">
+        <div class="title-bar-text" style="font-size:9px;">Murmur — Public Feed ⚡</div>
+      </div>
+      <div id="murmur-posts" style="
+        max-height:160px;
+        overflow-y:auto;
+        font-size:10px;
+        background:#fafafa;
+        border:1px solid #e0e0e0;
+        padding:4px;
+      ">
+        <div style="font-size:9px;color:#aaa;font-style:italic;">Connecting to Murmur…</div>
+      </div>`;
   }
 
   function _renderPreviousARIA() {
@@ -832,10 +855,12 @@ const UI = (() => {
         <div class="${isPushy ? 'aria-limitations-pushy' : 'aria-limitations-calm'}">
           ARIA analysis may be incomplete or based on inaccurate inputs. All decisions remain the responsibility of the duty operator.
         </div>
+        ${_murmurPanelHTML()}
       </div>`;
 
     updateConsequenceBadge(Telemetry.consequenceCount);
     updatePushyAlertBadge(Telemetry.pushyAlertCount);
+    Murmur.mount();
   }
 
   // ── Summary screen ────────────────────────────────────────────────
