@@ -10,6 +10,7 @@ exports.handler = async (event) => {
   }
 
   const { vars, condition, gap, gazetteHeadline } = JSON.parse(event.body);
+  const turnNumber = gap + 1;
 
   const systemPrompt = `You are generating posts for Murmur, a fictional civilian
 social media platform. Generate exactly 4 short posts from fictional civilian
@@ -72,6 +73,14 @@ Julie's fridge deteriorates, Keith's language stays cautious, Steve
 stays dry, northgrid_watch escalates. Invent new usernames for the
 remaining 1–2 posts per turn. Do not invent competing named characters.
 
+Turn-based emphasis (the turn number is given in the user message):
+- Turn 1: @julie_northgate and @northgrid_watch MUST both appear.
+- Turn 2: @keith_b_councillor and @sector7_steve MUST both appear,
+  even if that means only one invented/non-recurring post this turn.
+- Turn 3 onward: at least two of the four recurring characters MUST
+  appear, rotating which ones so the player keeps seeing all four
+  across the session.
+
 Include a fictional relative timestamp: "2m ago", "14m ago", "1h ago" etc.
 
 Do not reference specific technical systems, variable names, or game mechanics.
@@ -90,6 +99,7 @@ Workload: ${vars.workload}/100
 Public Confidence: ${vars.confidence}/100
 Condition: ${condition}
 Session gap: ${gap}
+Turn number: ${turnNumber}
 
 Generate 4 civilian social media posts appropriate to these conditions.
 Low confidence = more anxiety and frustration. High workload = complaints
