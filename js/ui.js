@@ -343,25 +343,28 @@ const UI = (() => {
 
   // ── Turn summary narrative (Phase 7, AD-40) ─────────────────────────
   function showTurnSummaryLoading() {
-    const el = document.getElementById('turn-summary-narrative');
-    if (!el) return;
+    const el   = document.getElementById('turn-summary-narrative');
+    const text = document.getElementById('turn-summary-text');
+    if (!el || !text) return;
     el.style.display = '';
-    el.textContent   = 'Generating summary…';
+    text.textContent = 'Generating summary…';
   }
 
-  function setTurnSummaryText(text) {
-    if (!text) { clearTurnSummary(); return; }
-    const el = document.getElementById('turn-summary-narrative');
-    if (!el) return;
+  function setTurnSummaryText(str) {
+    if (!str) { clearTurnSummary(); return; }
+    const el   = document.getElementById('turn-summary-narrative');
+    const text = document.getElementById('turn-summary-text');
+    if (!el || !text) return;
     el.style.display = '';
-    el.textContent   = text;
+    text.textContent = str;
   }
 
   function clearTurnSummary() {
-    const el = document.getElementById('turn-summary-narrative');
+    const el   = document.getElementById('turn-summary-narrative');
+    const text = document.getElementById('turn-summary-text');
     if (!el) return;
     el.style.display = 'none';
-    el.textContent   = '';
+    if (text) text.textContent = '';
   }
 
   function _renderPreviousARIA() {

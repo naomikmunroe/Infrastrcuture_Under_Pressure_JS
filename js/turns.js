@@ -63,6 +63,7 @@ const Turns = (() => {
       if (!response.ok) throw new Error(data.error?.message || `API error ${response.status}`);
       const text = data.content?.find(b => b.type === 'text')?.text || '';
       UI.setTurnSummaryText(text.trim());
+      Telemetry.logTurnSummaryLine(State.turn, text.trim());
     } catch (err) {
       UI.clearTurnSummary();
     }
@@ -340,7 +341,7 @@ const Turns = (() => {
     if (!edition) { done(); return; }
     const appearedAt = Date.now();
     UI.showNewspaper(edition, () => {
-      Telemetry.logNewspaperDismissed(edition.id, gap, Date.now() - appearedAt);
+      Telemetry.logNewspaperDismissed(edition.id, gap, Date.now() - appearedAt, edition.headline);
       done();
     });
   }

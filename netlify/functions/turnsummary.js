@@ -11,17 +11,18 @@ exports.handler = async (event) => {
 
   const { turn, varsBefore, varsAfter, consequencesFired } = JSON.parse(event.body);
 
-  const systemPrompt = `You are an automated reporting system for a critical
-infrastructure management organisation. Write exactly one sentence summarising
-what changed in the system during this operational turn.
+  const systemPrompt = `You are an observer summarising what just happened in a critical
+infrastructure management session. Write one short sentence that
+names the significant change or pattern from this turn — not the
+numbers, but what they mean operationally. Use plain English. Focus
+on consequence and direction, not measurement. Maximum 20 words.
+Do not start with 'System' or 'The system'.
 
-Use institutional third-person past tense. Do not evaluate performance.
-Do not use second person. Do not recommend actions. Reference the specific
-variables that changed and by how much. If consequence events fired, name
-them concisely. Maximum 30 words. Plain text only.
-
-Example: "System stability declined by 10 points following deferred maintenance
-action, while resource reserves remained unchanged at 45% of operational capacity."`;
+Examples of good output:
+Stability held, but at the cost of resources that may not be
+recoverable later.
+A difficult turn — workload climbed while confidence continued to slip.
+The rerouting bought time, but the maintenance backlog is growing.`;
 
   const delta = {
     stability:  varsAfter.stability  - varsBefore.stability,

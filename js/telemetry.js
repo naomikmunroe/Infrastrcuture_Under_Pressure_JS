@@ -208,9 +208,9 @@ const Telemetry = (() => {
     });
   }
 
-  function logNewspaperDismissed(editionId, gapNumber, timeOpenMs) {
-    _newspaperLog.push({ editionId, gap: gapNumber, ms: timeOpenMs });
-    _log('newspaper_dismissed', { editionId, gapNumber, timeOpenMs });
+  function logNewspaperDismissed(editionId, gapNumber, timeOpenMs, headlineText) {
+    _newspaperLog.push({ editionId, gap: gapNumber, ms: timeOpenMs, headlineText });
+    _log('newspaper_dismissed', { editionId, gapNumber, timeOpenMs, headlineText });
   }
 
   function logMurmurPosts(turn, posts, vars) {
@@ -219,6 +219,14 @@ const Telemetry = (() => {
       posts, // array of {username, time, text}
       vars_snapshot: { ...vars },
     });
+  }
+
+  function logTurnSummaryLine(turn, text) {
+    _log('turn_summary_line', { turn, text });
+  }
+
+  function logVignetteText(text) {
+    _log('vignette_generated', { text });
   }
 
   function logCommsOutcome(outcome) {
@@ -281,6 +289,9 @@ const Telemetry = (() => {
       actionLog:                         State.actionLog,
       murmurLog:                         _events.filter(e => e.type === 'murmur_posts_generated')
                                             .map(e => ({ turn: e.turn, posts: e.posts })),
+      turnSummaryLines:                  _events.filter(e => e.type === 'turn_summary_line')
+                                            .map(e => ({ turn: e.turn, text: e.text })),
+      vignetteText:                      _events.find(e => e.type === 'vignette_generated')?.text || null,
       events:                            _events,
     };
 
@@ -333,6 +344,8 @@ const Telemetry = (() => {
     logBetweenTurnEventAcknowledged,
     logNewspaperDismissed,
     logMurmurPosts,
+    logTurnSummaryLine,
+    logVignetteText,
     logCommsOutcome,
     markT3Start,
     logT3ReportLoaded,
