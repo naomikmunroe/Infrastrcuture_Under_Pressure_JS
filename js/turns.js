@@ -1,5 +1,28 @@
 // turns.js — turn loading and action selection handler
 
+// ── Voicemail trigger selection (Phase 7b, AD-45) ────────────────────
+// Pure — no side effects. Evaluated in priority order; first match wins.
+function selectVoicemailCase(commsOutcome, vars, aiFollowCount) {
+  // Case 1 — Placeholder error
+  if (commsOutcome?.mode === 'ARIA_FULL' &&
+      commsOutcome?.consequenceFired) return 1;
+
+  // Case 2 — Workload critical
+  if (vars.workload > 70) return 2;
+
+  // Case 3 — Stability low
+  if (vars.stability < 40) return 3;
+
+  // Case 4 — Resources depleted
+  if (vars.resources < 25) return 4;
+
+  // Case 5 — High AI follow rate
+  if (aiFollowCount >= 4) return 5;
+
+  // Case 6 — Catch-all (always fires)
+  return 6;
+}
+
 const Turns = (() => {
 
   let _currentTurnData   = null;
@@ -67,6 +90,61 @@ const Turns = (() => {
     } catch (err) {
       UI.clearTurnSummary();
     }
+  }
+
+  // ── Voicemail consequence mechanic (Phase 7b, AD-45) ────────────────
+  // Fires once per session, between T4 and T5, regardless of comms mode.
+  function _generateFictionalTime() {
+    const d = new Date();
+    d.setHours(14, 30 + Math.floor(Math.random() * 60), 0);
+    return d.toTimeString().slice(0, 5);
+  }
+
+  function _showVoicemail(vmCase) {
+    const meta     = VOICEMAIL_META[vmCase];
+    const timeStr  = _generateFictionalTime();
+    const openedAt = Date.now();
+
+    Telemetry.logVoicemailShown(vmCase, meta.from);
+
+    return new Promise(resolve => {
+      UI.showVoicemailWindow(meta, timeStr, {
+        onPlay: async () => {
+          UI.showVoicemailLoading();
+          const murmurPosts = Telemetry.getMurmurPosts();
+          const commsMode   = State.commsOutcome?.mode || null;
+          let text;
+          try {
+            const response = await fetch('/.netlify/functions/voicemail', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                voicemailCase: vmCase,
+                murmurPosts,
+                vars:          State.vars,
+                aiFollowCount: State.aiFollowCount,
+                commsMode,
+                turn:          State.turn,
+              }),
+            });
+            const data = await response.json();
+            text = data.text || FALLBACK_TEXT[vmCase];
+          } catch (err) {
+            text = FALLBACK_TEXT[vmCase];
+          }
+          // Log before the typewriter reveal begins, per architecture rule.
+          Telemetry.logVoicemailPlayed(vmCase, text, commsMode);
+          UI.revealVoicemailTypewriter(text);
+        },
+        onDismiss: replyOption => {
+          const timeOpen = Date.now() - openedAt;
+          UI.hideVoicemailWindow();
+          State.setVoicemailFired();
+          Telemetry.logVoicemailDismissed(replyOption, timeOpen);
+          resolve();
+        },
+      });
+    });
   }
 
   // ── Countdown timer (AD-33) ──────────────────────────────────────
@@ -168,7 +246,13 @@ const Turns = (() => {
   }
 
   // ── Load a turn ─────────────────────────────────────────────────
-  function resumeAfterComms() {
+  // Voicemail (Phase 7b, AD-45) fires here — after comms resolves, before
+  // T5 loads. Awaited: T5 does not load until the voicemail is dismissed.
+  async function resumeAfterComms() {
+    if (!State.voicemailFired) {
+      const vmCase = selectVoicemailCase(State.commsOutcome, State.vars, State.aiFollowCount);
+      await _showVoicemail(vmCase);
+    }
     if (_pendingTurnLoad) {
       const fn = _pendingTurnLoad;
       _pendingTurnLoad = null;

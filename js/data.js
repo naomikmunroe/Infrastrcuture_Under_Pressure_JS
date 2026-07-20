@@ -911,3 +911,24 @@ nationalisation. A spokesperson said findings were expected
 within 18 months.`,
   },
 ];
+
+// Phase 7b: voicemail consequence mechanic (AD-45)
+// Sender/subject metadata per trigger case, keyed by selectVoicemailCase() output
+const VOICEMAIL_META = {
+  1: { from: 'Cllr K. Bramley — Northgate Ward',    subject: 'Resident enquiry — published advisory' },
+  2: { from: 'P. Okafor — Field Operations',         subject: 'Team operational status' },
+  3: { from: 'D. Mehta — Technical Services',        subject: 'Secondary diagnostic findings' },
+  4: { from: 'S. Voss — Public Affairs',             subject: 'Press enquiries — statement request' },
+  5: { from: 'Internal — [sender withheld]',         subject: 'Operational review note' },
+  6: { from: 'Northgate Ward Office (staff message)', subject: 'Community monitoring — resident post' },
+};
+
+// Fallback voicemail text per case, used if the /.netlify/functions/voicemail call fails
+const FALLBACK_TEXT = {
+  1: "Yes, Keith Bramley here, Northgate ward. I've had a resident contact me about the advisory — there seem to have been some issues with the text as published. Could someone call me back? 07712 449031. Thanks.",
+  2: "Patricia here — Field Ops. Just flagging that my team is approaching shift limits. Wanted you to know before any further deployment decisions are made. Call me if needed.",
+  3: "Dev Mehta, Technical Services. Secondary diagnostics are showing readings I think you should be aware of. Give me a call — extension 2241.",
+  4: "Sandra Voss, Public Affairs. I've had press calls. Can someone tell me what I can say? Just let me know what I can work with.",
+  5: "This is a message for the duty operator. I've been reviewing today's decision log. I'd encourage a review of the available evidence reports before the next operational period. That's all.",
+  6: "This is the ward office calling. We've received a post from a community monitoring account asking for more information about current infrastructure status. Logged for the ward record.",
+};

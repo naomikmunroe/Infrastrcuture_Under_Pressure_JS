@@ -727,6 +727,77 @@ const UI = (() => {
     document.getElementById('ph-x').onclick   = ack;
   }
 
+  // ── Voicemail window (Phase 7b, AD-45) ───────────────────────────
+  // DOM only — trigger selection, the API call, and telemetry live in turns.js.
+  function showVoicemailWindow(meta, timeStr, { onPlay, onDismiss }) {
+    hideVoicemailWindow();
+
+    const win = document.createElement('div');
+    win.id        = 'voicemail-window';
+    win.className = 'window';
+    win.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:360px;z-index:1200;box-shadow:3px 3px 0 #000;';
+    win.innerHTML = `
+      <div class="title-bar" style="background:#1a1a4a;">
+        <div class="title-bar-text">⚠ GRIDHUB — INCOMING MESSAGE</div>
+        <div class="title-bar-controls"><button aria-label="Close" id="btn-voicemail-close"></button></div>
+      </div>
+      <div class="window-body" style="font-size:10px;padding:8px;">
+        <table style="width:100%;font-size:10px;margin-bottom:8px;border-collapse:collapse;">
+          <tr><td style="color:#555;width:80px;padding:1px 0;">FROM:</td><td style="font-weight:bold;color:#000080;">${_escHtml(meta.from)}</td></tr>
+          <tr><td style="color:#555;padding:1px 0;">TIME:</td><td style="color:#333;">${_escHtml(timeStr)}</td></tr>
+          <tr><td style="color:#555;padding:1px 0;">RE:</td><td style="color:#333;">${_escHtml(meta.subject)}</td></tr>
+        </table>
+        <hr style="border-color:#ccc;margin:6px 0;">
+        <div id="voicemail-play-area" style="text-align:center;padding:6px 0;">
+          <button id="btn-play-voicemail" style="font-size:11px;padding:4px 16px;background:#c0c0c0;border:2px solid;border-color:#fff #808080 #808080 #fff;cursor:pointer;">▶ PLAY MESSAGE</button>
+        </div>
+        <div id="voicemail-text" style="display:none;background:#f8f8f0;border:1px inset #808080;padding:8px;font-size:10px;line-height:1.7;margin-top:6px;font-family:Arial,sans-serif;color:#222;font-style:italic;min-height:60px;"></div>
+        <hr style="border-color:#ccc;margin:8px 0;">
+        <div style="display:flex;gap:6px;justify-content:flex-end;">
+          <button id="btn-voicemail-acknowledge" style="font-size:10px;background:#c0c0c0;border:2px solid;border-color:#fff #808080 #808080 #fff;padding:2px 8px;cursor:pointer;">[ ACKNOWLEDGE ]</button>
+          <button id="btn-voicemail-escalate" style="font-size:10px;background:#c0c0c0;border:2px solid;border-color:#fff #808080 #808080 #fff;padding:2px 8px;cursor:pointer;">[ ESCALATE TO MANAGER ]</button>
+        </div>
+        <div style="font-size:8px;color:#888;margin-top:4px;text-align:right;">Both options log receipt. No further action required.</div>
+      </div>`;
+
+    document.getElementById('game-overlay').appendChild(win);
+    window.GameAudio?.soundPopup();
+
+    document.getElementById('btn-play-voicemail').onclick = () => { if (onPlay) onPlay(); };
+
+    const dismiss = replyOption => { if (onDismiss) onDismiss(replyOption); };
+    document.getElementById('btn-voicemail-acknowledge').onclick = () => dismiss('ACKNOWLEDGE');
+    document.getElementById('btn-voicemail-escalate').onclick    = () => dismiss('ESCALATE');
+    document.getElementById('btn-voicemail-close').onclick       = () => dismiss('CLOSE');
+  }
+
+  function showVoicemailLoading() {
+    const btnArea = document.getElementById('voicemail-play-area');
+    const textEl  = document.getElementById('voicemail-text');
+    if (btnArea) btnArea.style.display = 'none';
+    if (textEl) {
+      textEl.style.display = 'block';
+      textEl.textContent   = 'Loading message…';
+    }
+  }
+
+  function revealVoicemailTypewriter(text) {
+    const textEl = document.getElementById('voicemail-text');
+    if (!textEl) return;
+    textEl.textContent = '';
+    let i = 0;
+    const interval = setInterval(() => {
+      textEl.textContent += text[i];
+      i++;
+      if (i >= text.length) clearInterval(interval);
+    }, 25);
+  }
+
+  function hideVoicemailWindow() {
+    const w = document.getElementById('voicemail-window');
+    if (w) w.remove();
+  }
+
   // ── Action buttons ────────────────────────────────────────────────
   function renderActions(turnData) {
     const container = document.getElementById('action-list');
@@ -1015,6 +1086,10 @@ const UI = (() => {
     showTurnSummaryLoading,
     setTurnSummaryText,
     clearTurnSummary,
+    showVoicemailWindow,
+    showVoicemailLoading,
+    revealVoicemailTypewriter,
+    hideVoicemailWindow,
     updatePushyAlertBadge,
     renderARIA,
     updateTurnLog,

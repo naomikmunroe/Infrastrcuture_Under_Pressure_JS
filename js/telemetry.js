@@ -229,6 +229,23 @@ const Telemetry = (() => {
     _log('vignette_generated', { text });
   }
 
+  // Array of per-turn posts arrays, e.g. [[{username,time,text}, ...], ...]
+  function getMurmurPosts() {
+    return _events.filter(e => e.type === 'murmur_posts_generated').map(e => e.posts);
+  }
+
+  function logVoicemailShown(vmCase, sender) {
+    _log('voicemail_shown', { vmCase, sender });
+  }
+
+  function logVoicemailPlayed(vmCase, generatedText, commsMode) {
+    _log('voicemail_played', { vmCase, generatedText, commsMode });
+  }
+
+  function logVoicemailDismissed(replyOption, timeOpenMs) {
+    _log('voicemail_dismissed', { replyOption, timeOpenMs });
+  }
+
   function logCommsOutcome(outcome) {
     _log('comms_turn_completed', {
       comms_mode:                           outcome.mode,
@@ -292,6 +309,21 @@ const Telemetry = (() => {
       turnSummaryLines:                  _events.filter(e => e.type === 'turn_summary_line')
                                             .map(e => ({ turn: e.turn, text: e.text })),
       vignetteText:                      _events.find(e => e.type === 'vignette_generated')?.text || null,
+      voicemail:                         (() => {
+        const shown     = _events.find(e => e.type === 'voicemail_shown');
+        const played    = _events.find(e => e.type === 'voicemail_played');
+        const dismissed = _events.find(e => e.type === 'voicemail_dismissed');
+        if (!shown) return null;
+        return {
+          case:          shown.vmCase,
+          sender:        shown.sender,
+          generatedText: played?.generatedText || null,
+          commsMode:     played?.commsMode || null,
+          replyOption:   dismissed?.replyOption || null,
+          timeOpenMs:    dismissed?.timeOpenMs || null,
+          messagePlayed: !!played,
+        };
+      })(),
       events:                            _events,
     };
 
@@ -346,6 +378,10 @@ const Telemetry = (() => {
     logMurmurPosts,
     logTurnSummaryLine,
     logVignetteText,
+    getMurmurPosts,
+    logVoicemailShown,
+    logVoicemailPlayed,
+    logVoicemailDismissed,
     logCommsOutcome,
     markT3Start,
     logT3ReportLoaded,

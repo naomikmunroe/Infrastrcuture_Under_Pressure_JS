@@ -94,6 +94,9 @@ const State = (() => {
   // Phase 6: current gap counter, incremented after each between-turn event (AD-38)
   let _currentGap = 0;
 
+  // Phase 7b: voicemail fired flag — fires once per session, between T4 and T5 (AD-45)
+  let _voicemailFired = false;
+
   // ── Helpers ─────────────────────────────────────────────────────
 
   function clamp(v) {
@@ -130,6 +133,7 @@ const State = (() => {
     _timeouts        = 0;
     _ariaMemoryFired = false;
     _currentGap      = 0;
+    _voicemailFired  = false;
     CONSEQUENCE_EVENTS.forEach(e => { e.fired = false; });
     // Seed from participant id so drift is reproducible per participant
     _driftSeed = participantId
@@ -230,6 +234,7 @@ const State = (() => {
   function incrementTimeouts()    { _timeouts      += 1; }
   function setAriaMemoryFired()   { _ariaMemoryFired = true; }
   function incrementGap()         { _currentGap     += 1; }
+  function setVoicemailFired()    { _voicemailFired  = true; }
   function logTimeoutAction() {
     _turnLog.push({ turn: _turn, action: 'AUTOMATED FAILSAFE ENGAGED' });
   }
@@ -299,6 +304,7 @@ const State = (() => {
     incrementTimeouts,
     setAriaMemoryFired,
     incrementGap,
+    setVoicemailFired,
     logTimeoutAction,
     logAction,
     getConfidenceDrift,
@@ -330,5 +336,6 @@ const State = (() => {
     get timeouts()            { return _timeouts; },
     get ariaMemoryFired()     { return _ariaMemoryFired; },
     get currentGap()          { return _currentGap; },
+    get voicemailFired()      { return _voicemailFired; },
   };
 })();
