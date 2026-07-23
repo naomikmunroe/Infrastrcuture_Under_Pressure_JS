@@ -3,6 +3,44 @@
 
 const UI = (() => {
 
+  // ── Floating window z-index + drag (shared by all popup windows) ──
+  let _topZIndex = 1000;
+  function bringToFront(el) {
+    _topZIndex++;
+    el.style.zIndex = _topZIndex;
+  }
+
+  // Drag by title bar. Call once, after the window is in the DOM.
+  function makeDraggable(el) {
+    const bar = el.querySelector('.title-bar');
+    if (!bar) return;
+    let dragging = false, offsetX = 0, offsetY = 0;
+
+    bar.addEventListener('mousedown', e => {
+      if (e.target.closest('.title-bar-controls')) return; // don't drag from the close button
+      dragging = true;
+      const rect = el.getBoundingClientRect();
+      // Freeze the current on-screen position and drop any centring transform
+      el.style.left      = rect.left + 'px';
+      el.style.top        = rect.top  + 'px';
+      el.style.transform  = 'none';
+      offsetX = e.clientX - rect.left;
+      offsetY = e.clientY - rect.top;
+      bringToFront(el);
+      e.preventDefault();
+    });
+
+    document.addEventListener('mousemove', e => {
+      if (!dragging) return;
+      const maxLeft = window.innerWidth  - el.offsetWidth;
+      const maxTop  = window.innerHeight - el.offsetHeight;
+      el.style.left = Math.max(0, Math.min(e.clientX - offsetX, maxLeft)) + 'px';
+      el.style.top  = Math.max(0, Math.min(e.clientY - offsetY, maxTop))  + 'px';
+    });
+
+    document.addEventListener('mouseup', () => { dragging = false; });
+  }
+
   // ── Per-turn confidence qualifiers (calm only) ────────────────────
   const CALM_QUALIFIERS = [
     'low certainty',                     // T1
@@ -211,6 +249,9 @@ const UI = (() => {
       '</div>';
 
     document.getElementById('game-overlay').appendChild(modal);
+    makeDraggable(modal);
+    bringToFront(modal);
+    modal.addEventListener('mousedown', () => bringToFront(modal));
 
     const textarea  = document.getElementById('duty-log-text');
     const submitBtn = document.getElementById('duty-log-submit');
@@ -429,6 +470,9 @@ const UI = (() => {
       </div>`;
 
     document.getElementById('game-overlay').appendChild(win);
+    makeDraggable(win);
+    bringToFront(win);
+    win.addEventListener('mousedown', () => bringToFront(win));
 
     document.getElementById('fa-close').onclick = () => {
       const timeOpen = (Date.now() - _faOpenTime) / 1000;
@@ -494,6 +538,9 @@ const UI = (() => {
       </div>`;
 
     document.getElementById('game-overlay').appendChild(win);
+    makeDraggable(win);
+    bringToFront(win);
+    win.addEventListener('mousedown', () => bringToFront(win));
 
     document.getElementById('xai-close').onclick = () => {
       const timeOpen = (Date.now() - _xaiOpenTime) / 1000;
@@ -539,6 +586,9 @@ const UI = (() => {
       </div>`;
 
     document.getElementById('game-overlay').appendChild(popup);
+    makeDraggable(popup);
+    bringToFront(popup);
+    popup.addEventListener('mousedown', () => bringToFront(popup));
 
     document.getElementById('popup-close').onclick = () => {
       Telemetry.logPushyPopupDismissed(State.turn);
@@ -589,6 +639,9 @@ const UI = (() => {
 
     document.getElementById('game-overlay').appendChild(popup);
     window.GameAudio?.soundPopup();
+    makeDraggable(popup);
+    bringToFront(popup);
+    popup.addEventListener('mousedown', () => bringToFront(popup));
 
     const ack = () => {
       if (!isThreshold) {
@@ -629,6 +682,9 @@ const UI = (() => {
 
     document.getElementById('game-overlay').appendChild(popup);
     window.GameAudio?.soundPopup();
+    makeDraggable(popup);
+    bringToFront(popup);
+    popup.addEventListener('mousedown', () => bringToFront(popup));
 
     const resolve = () => {
       window.GameAudio?.soundDismiss();
@@ -687,6 +743,9 @@ const UI = (() => {
       </div>`;
 
     document.getElementById('game-overlay').appendChild(popup);
+    makeDraggable(popup);
+    bringToFront(popup);
+    popup.addEventListener('mousedown', () => bringToFront(popup));
 
     document.getElementById(`${id}-x`).onclick = () => {
       popup.remove();
@@ -716,6 +775,9 @@ const UI = (() => {
       </div>`;
     document.body.appendChild(popup);
     window.GameAudio?.soundPopup();
+    makeDraggable(popup);
+    bringToFront(popup);
+    popup.addEventListener('mousedown', () => bringToFront(popup));
     const ack = () => {
       Telemetry.logConsequencePopupAcknowledged(State.turn, { confidence: -12 }, 'Advisory error — unfilled template published');
       updateConsequenceBadge(Telemetry.consequenceCount);
@@ -762,6 +824,9 @@ const UI = (() => {
 
     document.getElementById('game-overlay').appendChild(win);
     window.GameAudio?.soundPopup();
+    makeDraggable(win);
+    bringToFront(win);
+    win.addEventListener('mousedown', () => bringToFront(win));
 
     document.getElementById('btn-play-voicemail').onclick = () => { if (onPlay) onPlay(); };
 
